@@ -46,11 +46,15 @@ void App_Init()
     manager.Install("Hass","Pages/Hass");
     manager.Install("Setting","Pages/Setting");
     manager.Install("Smartled", "Pages/Smartled");
+    manager.Install("Face", "Pages/Face");
+    manager.Install("Codex", "Pages/Codex");
+    manager.Install("SceneEdit", "Pages/SceneEdit");
+    manager.Install("Notifications", "Pages/Notifications");
+    manager.Install("Power", "Pages/Power");
     manager.Install("WiFi","Pages/WiFi");
-    // manager.Install("Scene3D", "Pages/Scene3D");
-
     manager.SetGlobalLoadAnimType(PageManager::LOAD_ANIM_OVER_TOP, 500);
     manager.Push("Pages/Startup");
+
 
     // ACCOUNT_SEND_NOTIFY_CMD(Storage, STORAGE_CMD_LOAD);
     // ACCOUNT_SEND_NOTIFY_CMD(SysConfig, SYSCONFIG_CMD_LOAD);

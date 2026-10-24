@@ -1,5 +1,6 @@
 #include "hal/hal.h"
 #include "motor.h"
+#include "services/LightControl.h"
 #include <SimpleFOC.h>
 #include "app/Accounts/Account_Master.h"
 #include "esp_log.h"
@@ -113,6 +114,60 @@ static XKnobConfig x_knob_configs[] = {
         0.55,                    // Note the snap point is slightly past the midpoint (0.5); compare to normal detents which use a snap point *past* the next value (i.e. > 1)
         "On/off\nStrong detent", //模拟开关  强制动
     },
+    [MOTOR_UNBOUND_BRIGHTNESS] = {
+        .num_positions = 0,
+        .position = 0,
+        .position_width_radians = 2 * PI / 180,
+        .detent_strength_unit = 2,
+        .endstop_strength_unit = 1,
+        .snap_point = 1.1,
+        "Unbounded brightness"
+    },
+    [MOTOR_UNBOUND_CCT] = {
+        .num_positions = 0,
+        .position = 0,
+        .position_width_radians = 5 * PI / 180,
+        .detent_strength_unit = 2,
+        .endstop_strength_unit = 1,
+        .snap_point = 1.1,
+        "Unbounded color temperature"
+    },
+    [MOTOR_UNBOUND_APP_MENU_DETENTS] = {
+        .num_positions = 0,
+        .position = 0,
+        .position_width_radians = 30 * PI / 180,
+        .detent_strength_unit = 1.8,
+        .endstop_strength_unit = 1,
+        .snap_point = 0.55,
+        "App menu: lighter 30 degree detents"
+    },
+    [MOTOR_BOUNDED_BRIGHTNESS_DETENTS] = {
+        .num_positions = 100,
+        .position = 0,
+        .position_width_radians = 2 * PI / 180,
+        .detent_strength_unit = 3.2,
+        .endstop_strength_unit = 3.5,
+        .snap_point = 1.1,
+        "Bounded brightness 1-100"
+    },
+    [MOTOR_BOUNDED_CCT_DETENTS] = {
+        .num_positions = kFaceCctDetentCount + 1,
+        .position = 0,
+        .position_width_radians = kFaceCctDetentDegrees * PI / 180,
+        .detent_strength_unit = 3.2,
+        .endstop_strength_unit = 3.5,
+        .snap_point = 1.1,
+        "Bounded color temperature 2700-6500"
+    },
+    [MOTOR_LOCKED_DETENT] = {
+        .num_positions = 1,
+        .position = 0,
+        .position_width_radians = 2 * PI / 180,
+        .detent_strength_unit = 3.2,
+        .endstop_strength_unit = 3.5,
+        .snap_point = 1.1,
+        "Locked while light is off or gateway is offline"
+    },
 
 };
 
@@ -187,20 +242,32 @@ static float CLAMP(const float value, const float low, const float high)
     return value < low ? low : (value > high ? high : value);
 }
 
-void HAL::motor_shake(int strength, int delay_time)
+struct MotorRequest {
+    enum { MODE, PULSE } type;
+    int mode;
+    int position;
+    uint8_t strength;
+    uint16_t duration_ms;
+    bool must_play;
+};
+static QueueHandle_t motor_requests;
+
+static void enqueue_motor_pulse(int strength, int duration_ms, bool must_play)
 {
-    motor.move(strength);
-    for (int i = 0; i < delay_time; i++)
-    {
-        motor.loopFOC();
-        vTaskDelay(1);
-    }
-    motor.move(-strength);
-    for (int i = 0; i < delay_time; i++)
-    {
-        motor.loopFOC();
-        vTaskDelay(1);
-    }
+    if (!motor_requests || strength <= 0) return;
+    MotorRequest request = {};
+    request.type = MotorRequest::PULSE;
+    request.strength = constrain(strength, 1, 3);
+    request.duration_ms = constrain(duration_ms, 1, 20);
+    request.must_play = must_play;
+    xQueueSend(motor_requests, &request, pdMS_TO_TICKS(20));
+}
+
+void HAL::motor_exit_feedback(void)
+{
+    // Preserve the original X-Knob checkout pulse shape; only explicit
+    // long-press exits call this helper.
+    enqueue_motor_pulse(2, 2, true);
 }
 
 
@@ -211,21 +278,21 @@ int HAL::get_motor_position(void)
 
 void HAL::update_motor_mode(int mode , int init_position)
 {
-    motor_config = x_knob_configs[mode];
-    motor_config.position = init_position;
-    #if XK_INVERT_ROTATION
-        current_detent_center = -motor.shaft_angle;
-    #else
-        current_detent_center = motor.shaft_angle;
-    #endif
+    if (!motor_requests || mode < 0 || mode >= MOTOR_MAX_MODES) return;
+    MotorRequest request = {};
+    request.type = MotorRequest::MODE;
+    request.mode = mode;
+    request.position = init_position;
+    xQueueSend(motor_requests, &request, 0);
 }
 
 static void motor_status_publish(bool is_outbound)
 {
     // position
     static int32_t last_position = 0;
+    static bool last_outbound = false;
 
-    if (is_outbound || motor_config.position != last_position) {
+    if (is_outbound != last_outbound || motor_config.position != last_position) {
         MotorStatusInfo info = {
             .is_outbound = is_outbound,
             .position = motor_config.position,
@@ -234,6 +301,7 @@ static void motor_status_publish(bool is_outbound)
         actMotorStatus->Commit((const void*)&info, sizeof(MotorStatusInfo));
         actMotorStatus->Publish();
         last_position = motor_config.position;
+        last_outbound = is_outbound;
     }
 
 }
@@ -248,7 +316,50 @@ void TaskMotorUpdate(void *pvParameters)
     #else
         current_detent_center = motor.shaft_angle;
     #endif
+    uint32_t pulse_started = 0;
+    uint16_t pulse_duration = 0;
+    float pulse_amplitude = 0;
+    bool pulse_pending = false;
+    uint32_t pulse_deadline = 0;
+    uint16_t pending_duration = 0;
+    float pending_amplitude = 0;
+    bool pending_must_play = false;
     while(1) {
+        MotorRequest request;
+        while (xQueueReceive(motor_requests, &request, 0) == pdTRUE) {
+            if (request.type == MotorRequest::MODE) {
+                motor_config = x_knob_configs[request.mode];
+                motor_config.position = request.position;
+                #if XK_INVERT_ROTATION
+                    current_detent_center = -motor.shaft_angle;
+                #else
+                    current_detent_center = motor.shaft_angle;
+                #endif
+            } else {
+                // Keep the newest haptic until the rotor settles. Starting the
+                // timer only then prevents a fast twist from consuming the pulse.
+                if (!pulse_pending || !pending_must_play || request.must_play) {
+                    pending_duration = request.duration_ms;
+                    pending_amplitude = request.strength;
+                    pending_must_play = request.must_play;
+                    pulse_pending = true;
+                    pulse_deadline = millis() + 1200;
+                }
+            }
+        }
+        const uint32_t pulse_now = millis();
+        if (pulse_pending && !pending_must_play && (int32_t)(pulse_deadline - pulse_now) < 0) pulse_pending = false;
+        // Exit feedback must match the original synchronous HAL::motor_shake
+        // amplitude/timing: start when requested, even if the rotor has not fully settled.
+        // Optional scene/apply feedback waits for a still rotor to avoid masking a turn.
+        if (pulse_pending && !pulse_duration &&
+            (pending_must_play || fabsf(motor.shaft_velocity) < 2)) {
+            pulse_started = pulse_now;
+            pulse_duration = pending_duration;
+            pulse_amplitude = pending_amplitude;
+            pulse_pending = false;
+            pending_must_play = false;
+        }
         sensor.update();
         motor.loopFOC();
 
@@ -313,9 +424,11 @@ void TaskMotorUpdate(void *pvParameters)
             fminf(motor_config.position_width_radians * DEAD_ZONE_DETENT_PERCENT, DEAD_ZONE_RAD));
 
         // ========== 越界检测和 PID 参数动态调整 ==========
+        const float endstop_threshold = motor_config.position_width_radians * motor_config.snap_point;
         bool out_of_bounds = motor_config.num_positions > 0 &&
-                    ((angle_to_detent_center > 0 && motor_config.position == 0)
-                    || (angle_to_detent_center < 0 && motor_config.position == motor_config.num_positions - 1));
+                    ((angle_to_detent_center > endstop_threshold && motor_config.position == 0)
+                    || (angle_to_detent_center < -endstop_threshold &&
+                        motor_config.position == motor_config.num_positions - 1));
         motor.PID_velocity.limit = out_of_bounds ? 10 : 3;
         motor.PID_velocity.P = out_of_bounds ? motor_config.endstop_strength_unit * 4 : motor_config.detent_strength_unit * 4;
 
@@ -336,7 +449,15 @@ void TaskMotorUpdate(void *pvParameters)
             #if XK_INVERT_ROTATION
                 torque = -torque;
             #endif
-            motor.move(torque);
+            if (HAL::encoder_is_pushed() &&
+                motor_config.detent_strength_unit < 3.0f) torque *= 0.65f;
+            uint32_t pulse_age = millis() - pulse_started;
+            if (pulse_duration && pulse_age < pulse_duration * 2) {
+                torque = pulse_age < pulse_duration ? pulse_amplitude : -pulse_amplitude;
+            } else if (pulse_duration && pulse_age >= pulse_duration * 2) {
+                pulse_duration = 0;
+            }
+            motor.move(CLAMP(torque, -3.0f, 3.0f));
         }
         // motor.monitor();
         commander.run();
@@ -396,6 +517,7 @@ void HAL::motor_init(void)
 
     // commander.add('C', onPid, "PID vel");
     // commander.add('M', onMotor, "my motor");
+    motor_requests = xQueueCreate(16, sizeof(MotorRequest));
     xTaskCreatePinnedToCore(
         TaskMotorUpdate,
         "MotorThread",

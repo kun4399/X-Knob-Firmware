@@ -163,6 +163,7 @@ void Playground::PlayEventHandler(lv_event_t* event, lv_event_code_t code)
 	} else if (code == LV_EVENT_LONG_PRESSED) {
 		// return to memu
 		printf("Playground: LV_EVENT_LONG_PRESSED\n");
+		HAL::motor_exit_feedback();
 		Model->ChangeMotorMode(MOTOR_UNBOUND_COARSE_DETENTS);
 		Manager->Pop();
 	} 

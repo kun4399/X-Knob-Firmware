@@ -29,6 +29,12 @@
 // Default MQTT topic prefix used only when NVS is initialized for the first time.
 #define MQTT_HOST               "home"
 
+// Set this locally to the same non-identifying host ID used by Mac Companion.
+// The public default is deliberately a placeholder; keep deployment IDs out of Git.
+#ifndef XK_CODEX_HOST_ID
+#define XK_CODEX_HOST_ID "example-host"
+#endif
+
 
 #define LCD_BK_DEFAULT_BRIGHTNESS  50
 #define LCD_BK_DEFAULT_TIMEOUT     5

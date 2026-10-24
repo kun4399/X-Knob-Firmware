@@ -1,43 +1,32 @@
-#ifndef __MENU_PRESENTER_H
-#define __MENU_PRESENTER_H
+#pragma once
 
-#include "MenuView.h"
+#include "../Page.h"
+#include "services/GestureFSM.h"
 
-namespace Page
-{
-
-class Menu : public PageBase
-{
+namespace Page {
+class Menu : public PageBase {
 public:
-
-public:
-    Menu();
-    virtual ~Menu();
-
-    virtual void onCustomAttrConfig();
-    virtual void onViewLoad();
-    virtual void onViewDidLoad();
-    virtual void onViewWillAppear();
-    virtual void onViewDidAppear();
-    virtual void onViewWillDisappear();
-    virtual void onViewDidDisappear();
-    virtual void onViewDidUnload();
-
+    void onCustomAttrConfig() override;
+    void onViewLoad() override;
+    void onViewWillAppear() override;
+    void onViewWillDisappear() override;
+    void onViewDidUnload() override;
 private:
-    void Update();
-    void AttachEvent(lv_obj_t* obj, lv_event_cb_t event_cb);
-    static void onTimerUpdate(lv_timer_t* timer);
-    static void onPlaygroundEvent(lv_event_t* event);
-    static void onSuperDialEvent(lv_event_t* event);
-    static void onSystemEvent(lv_event_t* event);
-    static void onHassEvent(lv_event_t* event);
-    static void onSmartledEvent(lv_event_t* event);
-    static void onSettingEvent(lv_event_t* event);
-private:
-    MenuView View;
-    lv_timer_t* timer;
+    static constexpr int kItemCount = 6;
+    lv_obj_t *title_ = nullptr, *ring_ = nullptr, *inner_ring_ = nullptr;
+    lv_obj_t *name_ = nullptr, *previous_name_ = nullptr, *index_ = nullptr;
+    lv_obj_t *icon_parts_[3][5] = {};
+    lv_obj_t *dots_[kItemCount] = {};
+    lv_group_t *group_ = nullptr;
+    lv_timer_t *timer_ = nullptr;
+    GestureFSM gesture_;
+    int selected_ = 0;
+    int previous_selected_ = 0, transition_direction_ = 1;
+    uint32_t transition_at_ = 0, select_at_ = 0;
+    bool select_pending_ = false;
+    void update();
+    void render(uint32_t now);
+    void open_selected();
+    static void timer_cb(lv_timer_t *timer);
 };
-
 }
-
-#endif

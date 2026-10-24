@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>local.xknob.companion</string>
+  <key>ProgramArguments</key><array>
+    <string>REPLACE_WITH_ABSOLUTE_RUN_COMPANION_SH</string>
+  </array>
+  <key>WorkingDirectory</key><string>REPLACE_WITH_ABSOLUTE_MAC_COMPANION_DIRECTORY</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/xknob-companion.stdout.log</string>
+  <key>StandardErrorPath</key><string>/tmp/xknob-companion.stderr.log</string>
+</dict></plist>

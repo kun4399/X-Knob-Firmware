@@ -70,6 +70,15 @@ lv_group_t * lv_group_create(void)
 
 void lv_group_del(lv_group_t * group)
 {
+    /* An encoder/keyboard can retain this group after a page is unloaded.
+     * Clear every input-device reference before freeing it, otherwise the
+     * next encoder poll dereferences a dangling group pointer. */
+    lv_indev_t * indev = lv_indev_get_next(NULL);
+    while(indev) {
+        if(indev->group == group) lv_indev_set_group(indev, NULL);
+        indev = lv_indev_get_next(indev);
+    }
+
     /*Defocus the currently focused object*/
     if(group->obj_focus != NULL) {
         lv_event_send(*group->obj_focus, LV_EVENT_DEFOCUSED, get_indev(group));

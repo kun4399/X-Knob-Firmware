@@ -1,0 +1,72 @@
+{
+  "working": {
+    "label": "工作中",
+    "accent": "#A4ECFF",
+    "mode": "glide",
+    "tempo_ms": 5400,
+    "rest_opacity": 0.5,
+    "description": "轻而稳定的侧翼扫描，像在专注运算",
+    "led": "低亮蓝青慢流动",
+    "haptic": "开始时一次极轻确认，运行中不持续振动"
+  },
+  "approval": {
+    "label": "待审批",
+    "accent": "#FFC084",
+    "mode": "double_ping",
+    "tempo_ms": 5200,
+    "rest_opacity": 0.7,
+    "description": "进入时两次短呼吸，保持柔和琥珀双翼",
+    "led": "橙色双脉冲后低亮常驻",
+    "haptic": "事件首次出现双短脉冲，用户可静音"
+  },
+  "success": {
+    "label": "任务完成",
+    "accent": "#8CF3D4",
+    "mode": "bloom",
+    "tempo_ms": 3600,
+    "rest_opacity": 0.6,
+    "description": "双翼向外展开、回落；表情做轻快的喜悦弹跳",
+    "led": "青绿一次双流光，之后渐暗",
+    "haptic": "一次温柔双击确认，仅在状态到达时触发"
+  },
+  "error": {
+    "label": "任务失败",
+    "accent": "#FF8DA0",
+    "mode": "soft_fall",
+    "tempo_ms": 4900,
+    "rest_opacity": 0.62,
+    "description": "先短暂收缩，再缓慢下沉，绝不连续刺眼闪烁",
+    "led": "低亮珊瑚单次波纹",
+    "haptic": "轻单次提醒，不连续震动"
+  },
+  "lowbat": {
+    "label": "电量不足",
+    "accent": "#FFA88F",
+    "mode": "slow_fade",
+    "tempo_ms": 8100,
+    "rest_opacity": 0.55,
+    "description": "缓慢、略疲惫的呼吸；省电，不做高频闪动",
+    "led": "暖橙极低亮度呼吸",
+    "haptic": "默认无主动提示，仅首次达到阈值可选一次"
+  },
+  "offline": {
+    "label": "连接断开",
+    "accent": "#BBAAFF",
+    "mode": "reconnect",
+    "tempo_ms": 6200,
+    "rest_opacity": 0.58,
+    "description": "细弧短暂断续后重新对齐，表达等待恢复",
+    "led": "紫蓝轻闪一次后慢呼吸",
+    "haptic": "默认无持续提醒"
+  },
+  "notification": {
+    "label": "新消息",
+    "accent": "#A2EED7",
+    "mode": "arrival",
+    "tempo_ms": 4200,
+    "rest_opacity": 0.6,
+    "description": "双侧光流像收到轻敲，笑眼微抬后回正",
+    "led": "清透薄荷色轻快掠过",
+    "haptic": "一次短柔和提示"
+  }
+}

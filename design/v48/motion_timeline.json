@@ -1,0 +1,1619 @@
+{
+  "idle": {
+    "cycleMs": 6300,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "缓慢呼吸与偷眨",
+    "choreography": "微抬眼→呼吸→轻眨→向一侧偷看→回正",
+    "powerClass": "ultra_low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.15,
+        "y": -1.6,
+        "ly": 1.07,
+        "ry": 1.07,
+        "glow": 0.13
+      },
+      {
+        "t": 0.32,
+        "y": 0.5,
+        "r": -1.2,
+        "x": -1.4
+      },
+      {
+        "t": 0.45,
+        "ly": 0.16,
+        "ry": 0.16,
+        "y": 1
+      },
+      {
+        "t": 0.49,
+        "ly": 0.95,
+        "ry": 0.95
+      },
+      {
+        "t": 0.68,
+        "x": 2.2,
+        "r": 1.5
+      },
+      {
+        "t": 0.85,
+        "y": -1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "idle"
+  },
+  "hello": {
+    "cycleMs": 2850,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "向你打招呼",
+    "choreography": "两次轻快向上弹跳，眼睛微张，笑嘴上扬",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.09,
+        "y": -7,
+        "ly": 0.82,
+        "ry": 0.82,
+        "my": 1.22,
+        "spark": 0.3
+      },
+      {
+        "t": 0.21,
+        "y": 2.3,
+        "r": -2.8
+      },
+      {
+        "t": 0.31,
+        "y": -4.8,
+        "r": 2.2,
+        "my": 1.12,
+        "spark": 0.6
+      },
+      {
+        "t": 0.5,
+        "y": 0
+      },
+      {
+        "t": 0.75,
+        "y": -1.4,
+        "glow": 0.17
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "hello"
+  },
+  "happy": {
+    "cycleMs": 2600,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "ω 开心蹦跳",
+    "choreography": "轻蹦→笑眼挤起来→ω 嘴扩大→轻轻落地",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.13,
+        "y": -7,
+        "ly": 0.78,
+        "ry": 0.78,
+        "mx": 1.13,
+        "my": 1.3,
+        "spark": 0.6
+      },
+      {
+        "t": 0.24,
+        "y": 2,
+        "s": 0.96,
+        "mx": 0.96
+      },
+      {
+        "t": 0.36,
+        "y": -4,
+        "ly": 0.86,
+        "ry": 0.86,
+        "my": 1.21,
+        "spark": 0.8
+      },
+      {
+        "t": 0.57,
+        "y": 1.3
+      },
+      {
+        "t": 0.8,
+        "y": -0.5,
+        "glow": 0.18
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "happy"
+  },
+  "squishy": {
+    "cycleMs": 2250,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "挤眼三连笑",
+    "choreography": "> < 眼睛连续缩紧三下，ω 小嘴弹性舒展",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.1,
+        "y": -3.2,
+        "ly": 0.55,
+        "ry": 0.55,
+        "mx": 1.23,
+        "my": 1.4,
+        "spark": 0.6
+      },
+      {
+        "t": 0.2,
+        "y": 1.4,
+        "ly": 1,
+        "ry": 1
+      },
+      {
+        "t": 0.31,
+        "y": -4.3,
+        "ly": 0.54,
+        "ry": 0.54,
+        "my": 1.32,
+        "spark": 1
+      },
+      {
+        "t": 0.43,
+        "y": 1.1
+      },
+      {
+        "t": 0.55,
+        "y": -3,
+        "ly": 0.72,
+        "ry": 0.72,
+        "my": 1.18
+      },
+      {
+        "t": 0.72,
+        "y": 0
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "squishy"
+  },
+  "photo_omega": {
+    "cycleMs": 2400,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "颜文字歪眼摇头",
+    "choreography": "斜线眼向两侧轻摆，ω 嘴有两次柔软 Q 弹",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.15,
+        "y": -3.5,
+        "r": -4.8,
+        "lrot": -3.2,
+        "rrot": 3.2,
+        "mx": 1.05,
+        "my": 1.28,
+        "spark": 0.25
+      },
+      {
+        "t": 0.3,
+        "y": 2,
+        "r": 3.5,
+        "lrot": 2,
+        "rrot": -2
+      },
+      {
+        "t": 0.45,
+        "y": -3.2,
+        "r": -2.8,
+        "mx": 1.16,
+        "my": 1.38,
+        "spark": 0.65
+      },
+      {
+        "t": 0.62,
+        "y": 1.2,
+        "r": 2
+      },
+      {
+        "t": 0.81,
+        "y": -1,
+        "mx": 1.04
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "photo_omega"
+  },
+  "wink": {
+    "cycleMs": 3000,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "单眼眨眼小淘气",
+    "choreography": "左眼眯合、右眼微笑，星点出现在右侧然后消失",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.18,
+        "x": 2,
+        "r": 2.5,
+        "ly": 0.2,
+        "ry": 1.12,
+        "detail": 1.2,
+        "spark": 0.35
+      },
+      {
+        "t": 0.3,
+        "x": 1.5,
+        "ly": 0.09,
+        "ry": 1.08,
+        "spark": 0.85
+      },
+      {
+        "t": 0.48,
+        "x": 0,
+        "ly": 0.95,
+        "detail": 0.7
+      },
+      {
+        "t": 0.74,
+        "y": -1.2,
+        "ry": 0.94,
+        "spark": 0.2
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "wink"
+  },
+  "curious": {
+    "cycleMs": 3750,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "歪头观察",
+    "choreography": "先向右探头、单侧眼睛睁大、再微向左回看",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.13,
+        "x": 4.5,
+        "y": -1.5,
+        "r": 8.0,
+        "lx": 1.06,
+        "ly": 1.09,
+        "rx": 0.85,
+        "ry": 0.78,
+        "detail": 1
+      },
+      {
+        "t": 0.3,
+        "x": 6,
+        "r": 10,
+        "ly": 1.2,
+        "ry": 0.55,
+        "glow": 0.2
+      },
+      {
+        "t": 0.52,
+        "x": 5.4,
+        "r": 8,
+        "ry": 0.7
+      },
+      {
+        "t": 0.72,
+        "x": -3.2,
+        "r": -3.5,
+        "ly": 0.9,
+        "ry": 1.05
+      },
+      {
+        "t": 0.89,
+        "x": 0,
+        "r": 0
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "curious"
+  },
+  "wonder": {
+    "cycleMs": 3200,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "发现新东西",
+    "choreography": "惊讶撑大双眼、细小星芒亮一下，慢慢恢复",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.15,
+        "y": -5.5,
+        "s": 1.09,
+        "ly": 1.17,
+        "ry": 1.17,
+        "mx": 1.13,
+        "my": 1.16,
+        "spark": 0.8
+      },
+      {
+        "t": 0.29,
+        "y": 1,
+        "s": 1.02,
+        "detail": 1.15,
+        "spark": 1
+      },
+      {
+        "t": 0.48,
+        "y": -2.8,
+        "r": 3,
+        "ly": 1.05,
+        "ry": 1.09,
+        "spark": 0.7
+      },
+      {
+        "t": 0.77,
+        "y": 0,
+        "spark": 0.15
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "wonder"
+  },
+  "shy": {
+    "cycleMs": 4700,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "害羞缩起眼",
+    "choreography": "脸轻轻往下缩、两颊粉点显现、偷抬头再收回",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.22,
+        "y": 4.5,
+        "s": 0.955,
+        "ly": 0.73,
+        "ry": 0.73,
+        "mx": 0.84,
+        "detail": 1.2
+      },
+      {
+        "t": 0.38,
+        "y": 6,
+        "r": -2.2,
+        "ly": 0.64,
+        "ry": 0.8,
+        "detail": 1.4
+      },
+      {
+        "t": 0.55,
+        "y": 1,
+        "r": 1.5,
+        "mx": 1.02
+      },
+      {
+        "t": 0.76,
+        "y": 3,
+        "ly": 0.88,
+        "ry": 0.88
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "shy"
+  },
+  "smug": {
+    "cycleMs": 3250,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "有点得意",
+    "choreography": "小幅挑眉倾斜，嘴角一提，最后回正",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.17,
+        "x": 3.6,
+        "r": 6.3,
+        "ly": 0.83,
+        "ry": 1.08,
+        "mx": 1.04,
+        "dy": -1.8
+      },
+      {
+        "t": 0.42,
+        "x": 4.9,
+        "y": -1.5,
+        "r": 7.2,
+        "mx": 1.12,
+        "dy": -3,
+        "glow": 0.2
+      },
+      {
+        "t": 0.65,
+        "x": 1.3,
+        "r": 2.8,
+        "ly": 0.96
+      },
+      {
+        "t": 0.82,
+        "x": 0,
+        "y": -1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "smug"
+  },
+  "playful": {
+    "cycleMs": 2350,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "左右调皮蹦",
+    "choreography": "先左蹦再右蹦，X 眼挤紧，最后 Q 弹回正",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.11,
+        "x": -6,
+        "y": -4,
+        "r": -6,
+        "ly": 0.73,
+        "ry": 0.91,
+        "mx": 1.13,
+        "my": 1.12,
+        "spark": 0.5
+      },
+      {
+        "t": 0.23,
+        "x": 2,
+        "y": 1.2,
+        "r": 3
+      },
+      {
+        "t": 0.39,
+        "x": 6,
+        "y": -5,
+        "r": 6,
+        "ly": 0.92,
+        "ry": 0.72,
+        "spark": 0.7
+      },
+      {
+        "t": 0.58,
+        "x": -1,
+        "y": 1,
+        "r": -2
+      },
+      {
+        "t": 0.77,
+        "y": -1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "playful"
+  },
+  "laugh": {
+    "cycleMs": 2050,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "笑到停不下来",
+    "choreography": "开怀大笑时肩膀般左右抖三拍，弧眼随笑上下跳",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.11,
+        "x": -3.5,
+        "y": -5,
+        "r": -3,
+        "ly": 0.7,
+        "ry": 0.7,
+        "my": 1.2,
+        "mx": 1.1,
+        "spark": 0.55
+      },
+      {
+        "t": 0.21,
+        "x": 3,
+        "y": 1,
+        "r": 3
+      },
+      {
+        "t": 0.34,
+        "x": -4.5,
+        "y": -5,
+        "r": -4,
+        "my": 1.3,
+        "spark": 0.88
+      },
+      {
+        "t": 0.48,
+        "x": 3,
+        "y": 0,
+        "r": 3
+      },
+      {
+        "t": 0.61,
+        "x": -2.5,
+        "y": -2,
+        "my": 1.12
+      },
+      {
+        "t": 0.81,
+        "x": 1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "laugh"
+  },
+  "love": {
+    "cycleMs": 3900,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "双心跳",
+    "choreography": "心形眼两次有间隔的跳动，配柔和粉色小星点",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.11,
+        "s": 1.08,
+        "y": -2,
+        "ly": 1.08,
+        "ry": 1.08,
+        "spark": 0.6,
+        "glow": 0.3
+      },
+      {
+        "t": 0.2,
+        "s": 0.98,
+        "y": 0.5
+      },
+      {
+        "t": 0.31,
+        "s": 1.13,
+        "y": -3,
+        "mx": 1.08,
+        "spark": 1,
+        "glow": 0.4
+      },
+      {
+        "t": 0.44,
+        "s": 1.0
+      },
+      {
+        "t": 0.71,
+        "s": 1.03,
+        "y": -1,
+        "spark": 0.35
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "love"
+  },
+  "thinking": {
+    "cycleMs": 5150,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "认真思考",
+    "choreography": "歪头四秒钟，眉眼上下错位，问号渐亮后停顿",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.18,
+        "x": -2.7,
+        "y": -1.5,
+        "r": -5.8,
+        "ly": 0.9,
+        "ry": 1.08,
+        "detail": 0.7
+      },
+      {
+        "t": 0.38,
+        "x": -5,
+        "r": -7.5,
+        "ly": 0.8,
+        "ry": 1.15,
+        "detail": 1.3
+      },
+      {
+        "t": 0.58,
+        "x": -4.2,
+        "r": -7.2,
+        "detail": 1.35
+      },
+      {
+        "t": 0.74,
+        "x": 1.3,
+        "r": 2,
+        "detail": 0.65
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "thinking"
+  },
+  "confused": {
+    "cycleMs": 4100,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "软软疑惑：探头与歪嘴",
+    "choreography": "轻轻探头→不对称眼睛一开一合→小波浪嘴轻动→疑惑地回正",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.14,
+        "x": 3,
+        "y": -2,
+        "r": 4,
+        "ly": 1.07,
+        "ry": 1.08,
+        "mx": 1.08
+      },
+      {
+        "t": 0.31,
+        "x": 5,
+        "r": 5.8,
+        "ly": 0.86,
+        "ry": 1.12,
+        "my": 1.16,
+        "detail": 1.04
+      },
+      {
+        "t": 0.46,
+        "x": 1,
+        "r": 1.6,
+        "ly": 1.04,
+        "ry": 0.94,
+        "mx": 0.92
+      },
+      {
+        "t": 0.63,
+        "x": -3,
+        "r": -3,
+        "ly": 0.95,
+        "ry": 1.02,
+        "my": 1.1
+      },
+      {
+        "t": 0.8,
+        "x": 0.7,
+        "r": 1,
+        "detail": 0.9
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "confused"
+  },
+  "surprised": {
+    "cycleMs": 2850,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "突然被吓一跳",
+    "choreography": "瞬间瞪大眼睛、往后缩一点、张小圆嘴",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.09,
+        "y": -7,
+        "s": 1.18,
+        "ly": 1.21,
+        "ry": 1.21,
+        "my": 1.33,
+        "spark": 1
+      },
+      {
+        "t": 0.22,
+        "y": 1.5,
+        "s": 0.96
+      },
+      {
+        "t": 0.42,
+        "y": -1.5,
+        "s": 1.05,
+        "ly": 1.1,
+        "ry": 1.1
+      },
+      {
+        "t": 0.72,
+        "y": 0,
+        "s": 1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "surprised"
+  },
+  "sleepy": {
+    "cycleMs": 7800,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "犯困哈欠",
+    "choreography": "眼皮越来越沉，嘴慢慢张开打哈欠，然后闭上",
+    "powerClass": "ultra_low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.17,
+        "y": 1.5,
+        "ly": 0.85,
+        "ry": 0.85,
+        "my": 1.1
+      },
+      {
+        "t": 0.36,
+        "y": 4.5,
+        "r": 2,
+        "ly": 0.68,
+        "ry": 0.65,
+        "my": 1.34,
+        "mx": 1.13
+      },
+      {
+        "t": 0.58,
+        "y": 2.4,
+        "r": -1,
+        "ly": 0.54,
+        "ry": 0.54,
+        "my": 1.52
+      },
+      {
+        "t": 0.76,
+        "y": 1.6,
+        "my": 1.15,
+        "ly": 0.85,
+        "ry": 0.8
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "sleepy"
+  },
+  "dream": {
+    "cycleMs": 8500,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "梦中慢慢漂浮",
+    "choreography": "轻轻向上漂、星点浮现，缓慢沉下，再轻飘一次",
+    "powerClass": "ultra_low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.2,
+        "y": -5,
+        "r": -2,
+        "detail": 1.2,
+        "spark": 0.33
+      },
+      {
+        "t": 0.42,
+        "y": -7.5,
+        "r": 2,
+        "detail": 1.5,
+        "spark": 0.6
+      },
+      {
+        "t": 0.66,
+        "y": -2,
+        "detail": 0.8
+      },
+      {
+        "t": 0.82,
+        "y": -4.3,
+        "r": -1.3,
+        "detail": 1.1,
+        "spark": 0.2
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "dream"
+  },
+  "sad": {
+    "cycleMs": 4900,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "委屈想哭",
+    "choreography": "双眼下垂、脸向下，慢慢抬头但仍委屈",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.18,
+        "y": 4,
+        "r": -2,
+        "ly": 0.83,
+        "ry": 0.8,
+        "mx": 0.86,
+        "detail": 1
+      },
+      {
+        "t": 0.42,
+        "y": 6.5,
+        "r": -3.5,
+        "ly": 0.77,
+        "ry": 0.78,
+        "detail": 1.35
+      },
+      {
+        "t": 0.59,
+        "y": 3.8,
+        "r": -2,
+        "mx": 0.92
+      },
+      {
+        "t": 0.78,
+        "y": 1.5
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "sad"
+  },
+  "pout": {
+    "cycleMs": 3000,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "小小鼓腮",
+    "choreography": "噘嘴缩紧、轻轻鼓起，再松开",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.16,
+        "y": 1.5,
+        "s": 0.965,
+        "ly": 0.79,
+        "ry": 0.79,
+        "mx": 0.68,
+        "my": 1.35
+      },
+      {
+        "t": 0.32,
+        "y": -1,
+        "s": 1.025,
+        "mx": 0.83,
+        "my": 1.25
+      },
+      {
+        "t": 0.52,
+        "y": 1,
+        "s": 0.985,
+        "mx": 0.75
+      },
+      {
+        "t": 0.75,
+        "y": 0
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "pout"
+  },
+  "bored": {
+    "cycleMs": 6500,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "无聊左顾右盼",
+    "choreography": "半眯眼慢慢平移到左边停一会儿，然后慢慢回正",
+    "powerClass": "ultra_low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.21,
+        "x": -4.5,
+        "r": -2.5,
+        "ly": 0.8,
+        "ry": 0.78
+      },
+      {
+        "t": 0.41,
+        "x": -6,
+        "ly": 0.69,
+        "ry": 0.74
+      },
+      {
+        "t": 0.61,
+        "x": 1.5,
+        "y": 1,
+        "ly": 0.86,
+        "ry": 0.84
+      },
+      {
+        "t": 0.85,
+        "x": 0
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "bored"
+  },
+  "proud": {
+    "cycleMs": 3600,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "挺胸骄傲",
+    "choreography": "头微抬、斜眼向上、信心满满落下",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.17,
+        "y": -4,
+        "r": -4.4,
+        "ly": 0.88,
+        "ry": 0.92,
+        "mx": 1.14,
+        "dy": -2
+      },
+      {
+        "t": 0.33,
+        "y": -6,
+        "r": -5.2,
+        "ly": 1.08,
+        "ry": 1.08,
+        "mx": 1.2,
+        "glow": 0.3,
+        "spark": 0.25
+      },
+      {
+        "t": 0.55,
+        "y": -1,
+        "r": 2
+      },
+      {
+        "t": 0.76,
+        "y": -2,
+        "mx": 1.04
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "proud"
+  },
+  "dance": {
+    "cycleMs": 2550,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "快乐小舞步",
+    "choreography": "左右交替点头 + 两次更高弹跳，小音乐线跟着抖",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.14,
+        "x": -6,
+        "y": -5,
+        "r": -7,
+        "my": 1.18,
+        "detail": 1.2,
+        "spark": 0.55
+      },
+      {
+        "t": 0.27,
+        "x": 3,
+        "y": 2,
+        "r": 4
+      },
+      {
+        "t": 0.4,
+        "x": 6,
+        "y": -6,
+        "r": 8,
+        "detail": 0.9,
+        "spark": 0.9
+      },
+      {
+        "t": 0.55,
+        "x": -4,
+        "y": 1,
+        "r": -5
+      },
+      {
+        "t": 0.72,
+        "x": 1,
+        "y": -2,
+        "r": 2,
+        "detail": 1.1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "dance"
+  },
+  "blush": {
+    "cycleMs": 4500,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "脸红藏不住",
+    "choreography": "两边腮红亮起来，眼睛渐渐眯笑，脸轻轻向下缩",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.16,
+        "y": 2,
+        "ly": 0.86,
+        "ry": 0.86,
+        "detail": 0.7
+      },
+      {
+        "t": 0.35,
+        "y": 4.8,
+        "s": 0.97,
+        "ly": 0.65,
+        "ry": 0.65,
+        "mx": 1.12,
+        "detail": 1.5
+      },
+      {
+        "t": 0.59,
+        "y": 2.7,
+        "ly": 0.7,
+        "ry": 0.7,
+        "detail": 1.45
+      },
+      {
+        "t": 0.78,
+        "y": 1,
+        "detail": 1.13
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "blush"
+  },
+  "angry": {
+    "cycleMs": 2900,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "气鼓鼓抗议",
+    "choreography": "双眉眼一挤、轻轻抖两下、气消一些",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.14,
+        "x": -3,
+        "y": -2,
+        "r": -4,
+        "ly": 0.73,
+        "ry": 0.76,
+        "mx": 0.85,
+        "my": 1.25
+      },
+      {
+        "t": 0.28,
+        "x": 3,
+        "y": 0,
+        "r": 4
+      },
+      {
+        "t": 0.43,
+        "x": -2.7,
+        "y": -1,
+        "r": -3.5,
+        "ly": 0.69,
+        "ry": 0.69,
+        "detail": 1.15
+      },
+      {
+        "t": 0.65,
+        "x": 1.5,
+        "r": 1.7
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "angry"
+  },
+  "working": {
+    "cycleMs": 5400,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "专注读写 · 轻微错峰眯眼",
+    "choreography": "先专注阅读→左右眼错峰收缩→一次极快眨眼→停顿看结果→慢慢回正",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.1,
+        "y": -1.5,
+        "ly": 0.87,
+        "ry": 1.03,
+        "r": -1.8,
+        "glow": 0.25
+      },
+      {
+        "t": 0.23,
+        "x": 2,
+        "ly": 0.84,
+        "ry": 0.92,
+        "r": 1.4
+      },
+      {
+        "t": 0.39,
+        "x": 0,
+        "ly": 0.96,
+        "ry": 1.01,
+        "glow": 0.14
+      },
+      {
+        "t": 0.49,
+        "ly": 0.12,
+        "ry": 0.16,
+        "y": 1.7
+      },
+      {
+        "t": 0.535,
+        "ly": 1.03,
+        "ry": 1.04,
+        "y": -1.3
+      },
+      {
+        "t": 0.68,
+        "x": -2.2,
+        "r": -1.8,
+        "ly": 1.04,
+        "ry": 0.84,
+        "glow": 0.12
+      },
+      {
+        "t": 0.87,
+        "x": 0,
+        "r": 0,
+        "ly": 1.0,
+        "ry": 0.96
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "working",
+    "statusPresentation": "edge_aura_v48"
+  },
+  "approval": {
+    "cycleMs": 5200,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "惊讶抬眉 · 小心探头",
+    "choreography": "惊讶抬眉→两眼依次眯一下→试探性歪头→停住等待审批",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.1,
+        "y": -3.8,
+        "s": 1.08,
+        "ly": 1.14,
+        "ry": 1.16,
+        "glow": 0.6
+      },
+      {
+        "t": 0.21,
+        "ly": 0.94,
+        "ry": 1.06,
+        "r": -1.0
+      },
+      {
+        "t": 0.32,
+        "ly": 0.85,
+        "ry": 0.96,
+        "x": -1.9,
+        "r": -2.7
+      },
+      {
+        "t": 0.48,
+        "x": 2.7,
+        "r": 3.2,
+        "ly": 1.04,
+        "ry": 1.09,
+        "glow": 0.2
+      },
+      {
+        "t": 0.64,
+        "x": 0.7,
+        "r": 1.3,
+        "ly": 1.08,
+        "ry": 1.02
+      },
+      {
+        "t": 0.85,
+        "x": 0,
+        "r": 0,
+        "ly": 1.0,
+        "ry": 1.0
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "approval",
+    "statusPresentation": "edge_aura_v48"
+  },
+  "success": {
+    "cycleMs": 3600,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "双次软弹 · 开心 ω 嘴",
+    "choreography": "双眼先挤笑→开心抬头→小幅回弹→ω 嘴跟着 Q 弹→安静保持笑脸",
+    "powerClass": "normal",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.09,
+        "s": 0.94,
+        "ly": 0.87,
+        "ry": 0.87,
+        "y": 2
+      },
+      {
+        "t": 0.18,
+        "y": -6.7,
+        "s": 1.06,
+        "ly": 0.75,
+        "ry": 0.78,
+        "mx": 1.2,
+        "my": 1.16,
+        "glow": 0.45
+      },
+      {
+        "t": 0.28,
+        "y": 1.7,
+        "s": 0.97,
+        "mx": 0.98
+      },
+      {
+        "t": 0.39,
+        "y": -3.8,
+        "r": 2.1,
+        "mx": 1.14,
+        "my": 1.25,
+        "glow": 0.22
+      },
+      {
+        "t": 0.54,
+        "y": 1.4,
+        "r": -1.2,
+        "my": 1.03
+      },
+      {
+        "t": 0.78,
+        "y": -0.7,
+        "mx": 1.03
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "success",
+    "statusPresentation": "edge_aura_v48"
+  },
+  "error": {
+    "cycleMs": 4900,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "难过缩肩 · 慢慢平复",
+    "choreography": "短促受挫→两眼缓缓垂下→嘴巴轻缩→停顿后恢复一点精神",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.13,
+        "x": -2.8,
+        "r": -3.3,
+        "y": 2.4,
+        "ly": 0.81,
+        "ry": 0.81
+      },
+      {
+        "t": 0.29,
+        "x": 1.3,
+        "r": 1.5,
+        "y": 4.4,
+        "my": 0.87,
+        "ly": 0.76,
+        "ry": 0.8
+      },
+      {
+        "t": 0.45,
+        "x": 0,
+        "r": 0,
+        "y": 3.0,
+        "ly": 0.85,
+        "ry": 0.85
+      },
+      {
+        "t": 0.7,
+        "y": 2,
+        "ly": 0.9,
+        "ry": 0.9
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "error",
+    "statusPresentation": "edge_aura_v48"
+  },
+  "lowbat": {
+    "cycleMs": 8100,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "困倦慢眨 · 省电呼吸",
+    "choreography": "慢吞吞睁眼→单次很长的眯眼→轻垂头→停顿→恢复",
+    "powerClass": "ultra_low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.21,
+        "y": 2.5,
+        "ly": 0.85,
+        "ry": 0.85
+      },
+      {
+        "t": 0.43,
+        "y": 5.7,
+        "ly": 0.49,
+        "ry": 0.53,
+        "my": 0.9
+      },
+      {
+        "t": 0.59,
+        "y": 4.7,
+        "ly": 0.5,
+        "ry": 0.55
+      },
+      {
+        "t": 0.79,
+        "y": 1.8,
+        "ly": 0.88,
+        "ry": 0.87
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "lowbat",
+    "statusPresentation": "edge_aura_v48"
+  },
+  "offline": {
+    "cycleMs": 6200,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "断线错愕 · 缓慢试探",
+    "choreography": "左右分开的电子弧眼轻抖一次→迟疑观察→缓慢回正，不反复抽搐",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.11,
+        "x": -3,
+        "r": -2.6,
+        "ly": 0.85,
+        "ry": 0.94
+      },
+      {
+        "t": 0.2,
+        "x": 3,
+        "r": 2.0,
+        "ly": 0.96,
+        "ry": 0.85
+      },
+      {
+        "t": 0.36,
+        "x": -1.3,
+        "r": -1,
+        "ly": 0.89,
+        "ry": 0.9
+      },
+      {
+        "t": 0.55,
+        "x": 2.1,
+        "r": 1.6,
+        "ly": 1.04,
+        "ry": 1.02
+      },
+      {
+        "t": 0.8,
+        "x": 0,
+        "ly": 1,
+        "ry": 1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "offline",
+    "statusPresentation": "edge_aura_v48"
+  },
+  "notification": {
+    "cycleMs": 4200,
+    "enterMs": 280,
+    "exitMs": 210,
+    "label": "轻快探头 · 小惊喜",
+    "choreography": "眼睛一亮→轻快上挑→轻轻弹两下→回到自然笑眼",
+    "powerClass": "low",
+    "loopMode": "continuous",
+    "poses": [
+      {
+        "t": 0
+      },
+      {
+        "t": 0.12,
+        "y": -4.4,
+        "ly": 1.09,
+        "ry": 1.08,
+        "s": 1.05
+      },
+      {
+        "t": 0.24,
+        "y": 1.0,
+        "s": 0.97
+      },
+      {
+        "t": 0.38,
+        "y": -3.3,
+        "r": 2.5,
+        "ly": 0.9,
+        "ry": 0.96
+      },
+      {
+        "t": 0.49,
+        "y": 0.5,
+        "r": -1.2
+      },
+      {
+        "t": 0.67,
+        "y": -1.0,
+        "mx": 1.1
+      },
+      {
+        "t": 1
+      }
+    ],
+    "sourceExpression": "notification",
+    "statusPresentation": "edge_aura_v48"
+  }
+}

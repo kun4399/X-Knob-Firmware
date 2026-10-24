@@ -218,11 +218,9 @@ void Setting::SettingEventHandler(lv_event_t* event, lv_event_code_t code)
             HAL::encoder_enable();
             View->SetPlaygroundMode(app_mode);
             Model->ChangeMotorMode(MOTOR_UNBOUND_COARSE_DETENTS);
-        }
-    } else if (code == LV_EVENT_LONG_PRESSED_REPEAT) {
-        // return to memu
-        if (!lv_obj_has_state(obj, LV_STATE_EDITED)){
-            printf("Setting: LV_EVENT_LONG_PRESSED_REPEAT\n");
+            HAL::motor_exit_feedback();
+        } else {
+            HAL::motor_exit_feedback();
             Model->ChangeMotorMode(MOTOR_UNBOUND_COARSE_DETENTS);
             Manager->Pop();
         }

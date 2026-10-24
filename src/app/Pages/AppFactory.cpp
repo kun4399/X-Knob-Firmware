@@ -22,7 +22,6 @@
  */
 #include "AppFactory.h"
 #include "_Template/Template.h"
-#include "SystemInfos/SystemInfos.h"
 #include "StartUp/StartUp.h"
 #include "Menu/Menu.h"
 #include "Playground/Playground.h"
@@ -30,8 +29,10 @@
 #include "SurfaceDial/SurfaceDial.h"
 #include "Setting/Setting.h"
 #include "Smartled/Smartled.h"
-
-// #include "Scene3D/Scene3D.h"
+#include "Face/Face.h"
+#include "Codex/Codex.h"
+#include "SceneEdit/SceneEdit.h"
+#include "Codex/V48Aux.h"
 
 #define APP_CLASS_MATCH(className)\
 do{\
@@ -51,7 +52,11 @@ PageBase* AppFactory::CreatePage(const char* name)
     APP_CLASS_MATCH(Hass);
     APP_CLASS_MATCH(Setting);
     APP_CLASS_MATCH(Smartled);
-    // APP_CLASS_MATCH(Scene3D);
-
+    APP_CLASS_MATCH(Face);
+    APP_CLASS_MATCH(Codex);
+    APP_CLASS_MATCH(SceneEdit);
+    if (strcmp(name, "Notifications") == 0) return new Page::V48Aux(Page::V48Aux::NOTIFICATIONS);
+    if (strcmp(name, "Power") == 0) return new Page::V48Aux(Page::V48Aux::POWER);
+    if (strcmp(name, "Settings") == 0) return new Page::V48Aux(Page::V48Aux::SETTINGS);
     return nullptr;
 }

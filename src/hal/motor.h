@@ -41,8 +41,14 @@ typedef enum
     MOTOR_COARSE_DETENTS,       // Coarse values\nStrong detents
     MOTOR_FINE_NO_DETENTS,     // Fine values\nNo detents
     MOTOR_ON_OFF_STRONG_DETENTS,             // "On/off\nStrong detent"
+    MOTOR_UNBOUND_BRIGHTNESS,
+    MOTOR_UNBOUND_CCT,
+    MOTOR_UNBOUND_APP_MENU_DETENTS,
+    MOTOR_BOUNDED_BRIGHTNESS_DETENTS,
+    MOTOR_BOUNDED_CCT_DETENTS,
+    MOTOR_LOCKED_DETENT,
     MOTOR_MAX_MODES, //
 
 } MOTOR_RUNNING_MODE_E;
 
-#endif // 
+#endif

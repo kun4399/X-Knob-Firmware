@@ -124,6 +124,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     xhr.open("POST", "/update");
     xhr.send(fd);
     }
+
 </script>
 )rawliteral";
 
@@ -346,11 +347,9 @@ void wifi_server_begin(void *parameter)
     wifi_mode = 0;
     TaskParams *params = (TaskParams *)parameter;
     lv_obj_t* ui_wifi_label = params->ui_wifi_label;
-    char mac_tmp[6];
-    const char *ssid = mac_tmp;
-
-    sprintf(mac_tmp, "%02X\r\n", (uint32_t)(ESP.getEfuseMac() >> (24)));
-    sprintf(mac_tmp, "ESP32-%c%c%c%c%c%c", mac_tmp[4], mac_tmp[5], mac_tmp[2], mac_tmp[3], mac_tmp[0], mac_tmp[1]);
+    char ssid[24];
+    const uint32_t short_mac = static_cast<uint32_t>(ESP.getEfuseMac() & 0xFFFFFF);
+    snprintf(ssid, sizeof(ssid), "XKnob-%06lX", static_cast<unsigned long>(short_mac));
     WiFi.mode(WIFI_AP);
     while (!WiFi.softAP(ssid, "")) {};
     log_i("AP start success\n");

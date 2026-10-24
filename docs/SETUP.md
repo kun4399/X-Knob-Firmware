@@ -21,9 +21,13 @@ Network values are persisted in NVS. If the firmware has previously stored setti
 
 ## Use the Smart LED page
 
-- Rotate to adjust the current preview.
-- Short-press to move through brightness, temperature, and power.
-- Long-press to leave the page.
+- Short-press cycles the brightness, color-temperature, and power views without
+  changing the light state.
+- Rotate on the brightness or temperature view to change that value. On the
+  power view, rotate clockwise to turn on and counterclockwise to turn off.
+- Long-press to open scene preview. In scene preview, long-press returns to the
+  app carousel with exit feedback. Double-click from the light page returns to
+  the carousel silently.
 - Wait for the status label to show the gateway confirmed the value.
 
 If the display appears blank but the device still responds to input, first check the LCD backlight brightness in display settings; brightness `0` turns the backlight off.

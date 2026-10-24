@@ -1,49 +1,77 @@
-# Firmware architecture
+# Project structure and runtime architecture
 
-## Startup and runtime
-
-`src/main.cpp` initializes the HAL, NVS, LVGL, application objects, and the tasks that service the display and motor. The motor update loop runs independently from LVGL so that display work does not replace the motor's high-frequency control loop.
+This repository contains two separately run components: the ESP32-S3 firmware
+and an optional macOS Codex-to-MQTT bridge. The Mac code is kept in
+`mac_companion/`; it is not compiled into or uploaded with the knob firmware.
+The ESP32-WROOM-32 light gateway is a separate project in the SmartLED
+repository.
 
 ```text
-main.cpp
-├── HAL: motor / encoder / LCD / power / NVS / MQTT
-├── Port: LVGL display and input adapters
-├── App: page manager, accounts, resources, and screens
-└── Web: Wi-Fi/MQTT configuration and OTA upload
+1.Firmware/
+├── src/                 ESP32-S3 firmware
+│   ├── app/             LVGL pages, navigation, and application state
+│   ├── hal/             motor, encoder, LCD, NVS, and MQTT services
+│   ├── port/            LVGL display and input adapters
+│   ├── services/        gesture and light-control state machines
+│   └── web/             local Wi-Fi/MQTT setup and OTA handlers
+├── lib/                 firmware support libraries (including LVGL)
+├── design/v48/          source catalogue for generated face drawings
+├── tools/               asset generators and host-side tests
+├── docs/                setup, interaction, protocol, and verification notes
+└── mac_companion/       independent Python service, hooks, and tests
 ```
 
-## Hardware layer (`src/hal/`)
+## Firmware startup and task ownership
 
-- `motor.cpp` initializes SimpleFOC and runs the FOC and detent-position loop. It computes the active detent center, detects a crossed detent, applies a small dead zone near the center, and increases the boundary force at the ends of bounded ranges.
-- `encoder.cpp` and `knob.cpp` read the angle sensor and button events.
-- `lcd.cpp` controls the backlight and its timeout. A brightness of zero intentionally turns the backlight off; the application can still be running while the screen appears blank.
-- `nvs.cpp` persists settings in ESP32 Preferences. Values entered through the local setup page replace the first-boot defaults.
-- `mqtt.cpp` owns the Wi-Fi/MQTT worker, subscribes to the gateway state topic, and queues commands from the UI. The UI reads a snapshot through `HAL::smartled_state`.
+`src/main.cpp` initializes the HAL, NVS, LVGL, application pages, and runtime
+tasks. The motor loop is independent of LVGL so display work cannot replace its
+high-frequency control loop. The motor task is the only owner of motor writes;
+the Arduino loop owns NeoPixel writes; LVGL objects are changed by the UI task.
 
-The pin map and task-core assignments are in `src/config.h`. Treat motor parameters and GPIO assignments as board-specific settings; change them only when the hardware variant requires it.
+The board pin map and task-core assignments are in `src/config.h`. Motor
+parameters and GPIO assignments are hardware-specific. Do not copy them to a
+different board without checking its schematic and sensor arrangement.
 
-## Application (`src/app/`)
+## Firmware modules
 
-Each screen is a page managed by `PageManager`. `AppFactory.cpp` maps page names to page classes. Pages build their widgets in `onViewLoad`, respond to LVGL events, and release timers/widgets in their unload hooks.
+- `src/hal/` implements motor/encoder input, LCD backlight and saved power
+  settings, NVS, and the Wi-Fi/MQTT worker.
+- `src/port/` connects LVGL flush/input callbacks to the LCD and rotary input.
+- `src/services/` contains UI-independent gesture and light-control logic.
+- `src/app/Pages/` contains pages registered through `AppFactory.cpp` and
+  installed by `app.cpp`. `Face` is the normal startup destination; the V4.8
+  carousel opens the light, scene editor, Codex, notifications, power, and
+  settings modules.
+- `src/web/` handles local Wi-Fi/MQTT setup and OTA upload. Never log submitted
+  passwords.
+- `design/v48/` is source data; `tools/generate_face_data.py` produces the
+  compact drawing table used by the firmware. GIFs and browser assets are not
+  runtime firmware assets.
+- `mac_companion/` has a separate Python dependency file, virtual environment,
+  unit tests, local hook ingress, and optional LaunchAgent. It publishes only
+  allowlisted Codex metadata to the existing broker.
 
-The menu launches pages such as Startup, Settings, Playground, System Info, Surface Dial, Home Assistant, and Smart LED. The Smart LED page in `Pages/Smartled/` displays a local preview, sends a command after a short rotation pause, and waits for the gateway's state update before marking the value confirmed. Short press changes between brightness, temperature, and power; long press exits.
+## Page and gesture behavior
 
-The account system under `Accounts/` and `Utils/AccountSystem/` provides publish/notify/pull messaging for shared data such as motor and system configuration. Prefer using these established interfaces where existing pages depend on them.
+`PageManager` owns page lifetime and transitions. A page creates LVGL objects
+in its load hooks and releases timers/groups in unload hooks. The current page
+routes and button/rotary contract are maintained in
+[INTERACTION_MAP.md](INTERACTION_MAP.md); use that as the behavior reference
+when changing navigation. In particular, a short press in the light app only
+changes the active control view. The power view changes the light only on
+rotation. Previews are not commands, and a light value is confirmed only after
+gateway acknowledgement/readback described in [MQTT.md](MQTT.md).
 
-## Display and input (`src/port/`)
+## Build and test by component
 
-`display.cpp` configures the LCD hardware. `lv_port/` translates LVGL flush and input callbacks to the display and rotary encoder. Keep hardware-specific drawing and touch/input adaptation in this layer rather than in page logic.
+Build firmware from the repository root with `pio run`. Host-only firmware
+logic tests and asset generation commands are listed in
+[V48_RELEASE.md](V48_RELEASE.md). For the Mac bridge, create a separate venv
+inside `mac_companion/`, install its own `requirements.txt`, then run
+`python -m unittest discover -s tests -v` from that directory. Installing or
+testing the Mac bridge does not flash the knob. See
+[Mac Companion setup](../mac_companion/README.md).
 
-## Network and persistence
-
-The local web setup handlers in `src/web/WiFiAsyncWebServer.cpp` save network values through the NVS API. Never log submitted passwords. MQTT is compiled behind `XK_MQTT`; when disabled, its public HAL methods return safe defaults so the UI can still build.
-
-The knob expects the gateway to provide the topic and command contract documented in [MQTT.md](MQTT.md). A screen preview is not a confirmed device state: only the gateway's reported state marks an operation as synchronized.
-
-## Adding a page
-
-1. Add the page class under `src/app/Pages/<PageName>/`.
-2. Register it in `src/app/Pages/AppFactory.cpp`.
-3. Add a menu entry/event if users should open it from the menu.
-4. Release timers, LVGL groups, and dynamically allocated objects in the matching page lifecycle hooks.
-5. Run `pio run` and inspect both compiler output and the UI lifecycle on target hardware.
+Build success and host tests do not prove screen rendering, motor feel, MQTT
+delivery, or light behavior on a physical device. Current evidence and open
+hardware checks are listed in [V48_RELEASE.md](V48_RELEASE.md).

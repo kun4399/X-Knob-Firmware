@@ -58,8 +58,9 @@ void SurfaceDial::SurfaceDialEventHandler(lv_event_t* event, lv_event_code_t cod
 {
 	if (code == LV_EVENT_SHORT_CLICKED) {
 		HAL::surface_dial_press();
-	} else if (code == LV_EVENT_LONG_PRESSED_REPEAT) {
+	} else if (code == LV_EVENT_LONG_PRESSED) {
 		// return to memu
+		HAL::motor_exit_feedback();
 		Model->ChangeMotorMode(MOTOR_UNBOUND_COARSE_DETENTS);
 		Manager->Pop();
 	} else if (code == LV_EVENT_RELEASED) {

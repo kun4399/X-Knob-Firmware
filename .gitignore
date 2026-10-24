@@ -1,4 +1,8 @@
 .pio
+.venv/
+logs/
+__pycache__/
+*.pyc
 .vscode
 src/secrets.h
 *.bin

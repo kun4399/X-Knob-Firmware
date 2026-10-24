@@ -1,0 +1,130 @@
+{
+  "version": "4.8",
+  "entry_page": "FACE",
+  "gestures": {
+    "rotate_clockwise": {
+      "face": "light_brightness_increase",
+      "light": "light_brightness_increase",
+      "scene": "next_scene",
+      "menu": "next_app",
+      "sceneEdit": "edit_selected_scene_field_only"
+    },
+    "rotate_counterclockwise": {
+      "face": "light_brightness_decrease",
+      "light": "light_brightness_decrease",
+      "scene": "previous_scene",
+      "menu": "previous_app",
+      "sceneEdit": "edit_selected_scene_field_only"
+    },
+    "short_click": {
+      "face": "toggle_light",
+      "light": "toggle_light",
+      "scene": "apply_scene",
+      "menu": "enter_selected_app",
+      "sceneEdit": "switch_brightness_temperature_field"
+    },
+    "hold_and_rotate": {
+      "face": "change_cct",
+      "light": "change_cct"
+    },
+    "long_release_no_rotation": {
+      "face": "enter_scenes",
+      "light": "enter_scenes",
+      "scene": "return_face_single_light_haptic",
+      "menu": "return_face",
+      "sceneEdit": "return_scene"
+    },
+    "double_click": {
+      "face": "open_app_menu",
+      "menu": "close_app_menu"
+    }
+  },
+  "timing_ms": {
+    "debounce": 25,
+    "short_max": 350,
+    "double_gap": 280,
+    "scene_long": 1200,
+    "light_overlay_return": 1800
+  },
+  "hold_rotate_angle_threshold_deg": 5,
+  "priority": [
+    "WAKE_CONSUME",
+    "HOLD_ROTATE",
+    "LONG_RELEASE",
+    "DOUBLE_CLICK",
+    "SHORT_CLICK"
+  ],
+  "logic": {
+    "hold_rotate_suppresses_click": true,
+    "hold_rotate_suppresses_long": true,
+    "double_click_suppresses_single": true,
+    "wake_press_does_not_toggle_light": true,
+    "rotate_while_off_does_not_power_on": true,
+    "scene_preview_does_not_control_ble_light": true
+  },
+  "scene_defaults": [
+    {
+      "id": "reading",
+      "name": "阅读",
+      "brightness": 90,
+      "cct_kelvin": 5000
+    },
+    {
+      "id": "night",
+      "name": "夜灯",
+      "brightness": 12,
+      "cct_kelvin": 2700
+    },
+    {
+      "id": "focus",
+      "name": "专注",
+      "brightness": 75,
+      "cct_kelvin": 4200
+    },
+    {
+      "id": "ambient",
+      "name": "氛围",
+      "brightness": 35,
+      "cct_kelvin": 3000
+    }
+  ],
+  "main_menu": [
+    "LIGHT",
+    "SCENE_EDIT",
+    "CODEX",
+    "NOTIFICATIONS",
+    "POWER",
+    "SETTINGS"
+  ],
+  "scenes_editor": {
+    "access": "APP_MENU_SCENE_EDIT",
+    "editable_fields": [
+      "brightness_percent",
+      "color_temperature_kelvin"
+    ],
+    "editing_changes_current_live_light": false,
+    "apply_only_from_scene_menu_short_click": true
+  },
+  "design_override": "pupil-free Moji Face + dual-edge living status aura; authoritative sources are expression_catalogue.json, motion_timeline.json, status_aura_v48.json",
+  "expression_policy": {
+    "daily": "can vary softly only while idle on FACE",
+    "status": "never overridden by random ambient emotions",
+    "status_overlay": "dual cheek-edge living aura + soft borderless caption; never a bottom rail/capsule",
+    "notice_priority": [
+      "low_battery",
+      "approval",
+      "task_failed",
+      "offline",
+      "new_message",
+      "task_done",
+      "running"
+    ],
+    "interrupts_active_light_controls": false,
+    "presentation": "emotion-first facial reaction; no top dots, right-corner status glyphs, or generic progress bar",
+    "acting_levels": {
+      "quiet": 0.55,
+      "balanced": 1.0,
+      "lively": 1.35
+    }
+  }
+}
