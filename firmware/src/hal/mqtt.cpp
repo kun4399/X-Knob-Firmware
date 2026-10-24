@@ -7,6 +7,7 @@
 #include <WiFi.h>
 #include "config.h"
 #include "hal/nvs.h"
+#include "services/CodexEventGate.h"
 
 namespace {
 WiFiClient wifi_client;
@@ -30,6 +31,8 @@ char V1_CODEX_EVENT[128];
 char V1_CODEX_USAGE[128];
 char V1_CODEX_AVAIL[128];
 char last_event_id[80] = {};
+CodexEventGate codex_events;
+portMUX_TYPE command_mux = portMUX_INITIALIZER_UNLOCKED;
 uint32_t command_boot = 0;
 uint32_t command_seq = 0;
 String broker_user, broker_password, wifi_ssid, wifi_password;
@@ -42,12 +45,26 @@ struct Outgoing {
 bool queue_publish(const char *topic, const char *payload)
 {
     // UI tasks only enqueue small messages; PubSubClient stays owned by mqtt_worker.
-    if (!outgoing || !topic || !payload || strlen(topic) >= sizeof(Outgoing::topic) ||
+    if (!broker_online || !outgoing || !topic || !payload || strlen(topic) >= sizeof(Outgoing::topic) ||
         strlen(payload) >= sizeof(Outgoing::payload)) return false;
     Outgoing item = {};
     strlcpy(item.topic, topic, sizeof(item.topic));
     strlcpy(item.payload, payload, sizeof(item.payload));
     return xQueueSend(outgoing, &item, 0) == pdTRUE;
+}
+
+void drop_connection() {
+    broker_online = false;
+    xQueueReset(outgoing);
+    codex_events.reconnect();
+    if (xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) == pdTRUE) {
+        light_state.online = false;
+        light_state.received_ms = 0;
+        light_state.last_ack_id[0] = 0;
+        codex_snapshot.source_online = false;
+        codex_snapshot.snapshot_valid = false;
+        xSemaphoreGive(state_lock);
+    }
 }
 
 void mqtt_callback(char *topic, byte *payload, unsigned int length)
@@ -70,6 +87,7 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length)
         const char *quality = doc["quality"] | "unknown";
         if (strlen(phase) >= sizeof(codex_snapshot.phase) ||
             strlen(quality) >= sizeof(codex_snapshot.quality)) return;
+        codex_events.status(doc["boot_id"] | "", doc["event_seq"] | 0U);
         if (xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) == pdTRUE) {
             strlcpy(codex_snapshot.phase, phase, sizeof(codex_snapshot.phase));
             strlcpy(codex_snapshot.quality, quality, sizeof(codex_snapshot.quality));
@@ -98,6 +116,7 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length)
         const char *kind = doc["kind"] | "";
         if (!id[0] || strlen(id) >= sizeof(last_event_id) ||
             strlen(kind) >= sizeof(codex_snapshot.event_kind)) return;
+        if (!codex_events.accept(doc["boot_id"] | "", doc["seq"] | 0U)) return;
         if (xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) == pdTRUE) {
             if (strcmp(last_event_id, id) != 0) {
                 strlcpy(last_event_id, id, sizeof(last_event_id));
@@ -193,7 +212,7 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length)
     if (xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) == pdTRUE) {
         // A rolled-back gateway only publishes the legacy topic. Let it take over
         // once V1 readback has gone stale so the migration remains reversible.
-        if (!light_state.modern || millis() - light_state.received_ms > 30000)
+        if (!light_state.modern || millis() - light_state.received_ms > 90000)
             light_state = next;
         xSemaphoreGive(state_lock);
     }
@@ -204,12 +223,13 @@ void mqtt_worker(void *)
     unsigned long last_attempt = 0;
     unsigned long last_wifi_attempt = 0;
     bool wifi_begin_issued = false;
+    bool modem_sleep_set = false;
     for (;;) {
         unsigned long now = millis();
         if (WiFi.status() != WL_CONNECTED) {
+            modem_sleep_set = false;
             if (mqtt_enabled) {
-                broker_online = false;
-                xQueueReset(outgoing);
+                drop_connection();
             }
             // WiFi.begin() tears down/reinitializes the driver. Repeating it
             // while the STA is still scanning can exhaust RX buffers and emit
@@ -220,16 +240,20 @@ void mqtt_worker(void *)
                 WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
                 wifi_begin_issued = true;
             }
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(50));
             continue;
+        }
+        if (!modem_sleep_set) {
+            // MIN_MODEM keeps the connection while reducing RF duty cycle;
+            // MAX_MODEM risks extra latency or dropped broadcast frames.
+            modem_sleep_set = WiFi.setSleep(true);
         }
         if (!mqtt_enabled) {
             vTaskDelay(pdMS_TO_TICKS(10));
             continue;
         }
         if (!mqtt_client.connected()) {
-            broker_online = false;
-            xQueueReset(outgoing);
+            drop_connection();
             if (now - last_attempt > 5000) {
                 last_attempt = now;
                 String client_id = String("xknob-") + String((uint32_t)ESP.getEfuseMac(), HEX);
@@ -251,11 +275,19 @@ void mqtt_worker(void *)
             }
         } else {
             mqtt_client.loop();
+            if (!mqtt_client.connected()) {
+                drop_connection();
+                continue;
+            }
             Outgoing item;
-            while (xQueueReceive(outgoing, &item, 0) == pdTRUE)
-                mqtt_client.publish(item.topic, item.payload, false);
+            while (xQueueReceive(outgoing, &item, 0) == pdTRUE) {
+                if (!mqtt_client.publish(item.topic, item.payload, false)) {
+                    drop_connection();
+                    break;
+                }
+            }
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 } // namespace
@@ -298,6 +330,8 @@ void HAL::mqtt_init(void)
         command_boot = esp_random();
         mqtt_client.setServer(broker_host, port);
         mqtt_client.setBufferSize(1024);
+        mqtt_client.setKeepAlive(60);
+        mqtt_client.setSocketTimeout(2);
         mqtt_client.setCallback(mqtt_callback);
     }
     xTaskCreatePinnedToCore(mqtt_worker, "MqttThread", 6144, nullptr, 2,
@@ -323,8 +357,11 @@ bool HAL::smartled_set(bool include_power, bool power, bool include_brightness,
         (include_brightness && (brightness < 1 || brightness > 100)) ||
         (include_temperature && (temperature < 2700 || temperature > 6500))) return false;
     char id[64];
+    portENTER_CRITICAL(&command_mux);
+    const uint32_t sequence = ++command_seq;
+    portEXIT_CRITICAL(&command_mux);
     snprintf(id, sizeof(id), "k%08lx-%lu", (unsigned long)command_boot,
-             (unsigned long)++command_seq);
+             (unsigned long)sequence);
     bool modern = false;
     if (state_lock && xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) == pdTRUE) {
         modern = light_state.modern;
@@ -367,7 +404,7 @@ bool HAL::smartled_state(SmartledState *out)
     if (!out || !state_lock || xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) != pdTRUE) return false;
     *out = light_state;
     xSemaphoreGive(state_lock);
-    if (!broker_online || millis() - out->received_ms > 30000) out->online = false;
+    if (!broker_online || millis() - out->received_ms > 90000) out->online = false;
     return true;
 }
 
@@ -376,7 +413,7 @@ bool HAL::codex_state(CodexState *out)
     if (!out || !state_lock || xSemaphoreTake(state_lock, pdMS_TO_TICKS(20)) != pdTRUE) return false;
     *out = codex_snapshot;
     xSemaphoreGive(state_lock);
-    if (!broker_online || millis() - out->received_ms > 120000) out->source_online = false;
+    if (!broker_online || millis() - out->received_ms > 240000) out->source_online = false;
     return true;
 }
 

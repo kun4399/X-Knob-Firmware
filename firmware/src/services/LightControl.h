@@ -1,4 +1,16 @@
 #pragma once
+#include <stdint.h>
+#include <string.h>
+
+// ACK is transport feedback. Only fresh, online BLE readback can confirm a
+// desired value; V1 also requires the exact command ID, in either arrival order.
+static inline bool light_control_readback_for_command(
+    bool modern, bool online, bool ok, const char *readback_id,
+    const char *command_id, uint32_t received_at, uint32_t sent_at) {
+    if (!online || !ok || !received_at ||
+        static_cast<int32_t>(received_at - sent_at) < 0) return false;
+    return !modern || (command_id[0] && strcmp(readback_id, command_id) == 0);
+}
 
 #include <stdint.h>
 

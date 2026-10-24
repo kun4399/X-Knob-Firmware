@@ -108,6 +108,7 @@ class Reducer:
         focus = sessions[0] if sessions else None
         return {
             "v": 1, "host_id": self.host_id, "boot_id": self.boot_id,
+            "event_seq": self.seq,
             "observed_at": datetime.fromtimestamp(last_observed, timezone.utc).isoformat() if last_observed else None,
             "source": "codex_hooks", "quality": "unknown" if last_observed is None else
                 ("stale" if now - last_observed > 600 else "observed"),

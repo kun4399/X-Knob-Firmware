@@ -7,13 +7,14 @@ extern lv_color_t* disp_draw_buf;
 
 void HAL::Init()
 {
+    // Qualify manual-off wake before allocating UI buffers or starting FOC.
+    power_init();
     Serial.begin(115200);
 
     // Move the malloc process to Init() to make sure that the largest heap can be used for this buffer.
     disp_draw_buf = static_cast<lv_color_t*>(malloc(DISP_BUF_SIZE * sizeof(lv_color_t)));
     if (disp_draw_buf == nullptr)
         Serial.printf("lv_port_disp_init malloc failed!\n");
-    power_init();
     motor_init();
 
     knob_init();

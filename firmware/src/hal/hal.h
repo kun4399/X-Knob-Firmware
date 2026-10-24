@@ -62,14 +62,28 @@ namespace HAL
     bool encoder_is_pushed(void);
 
     void motor_init(void);
+    struct MotorInput {
+        int32_t position;
+        uint32_t epoch;
+        bool sensor_only;
+    };
+    MotorInput motor_input();
     // void TaskMotorUpdate(void *pvParameters);
     int get_motor_position(void);
     bool motor_endstop_active(void);
     void update_motor_mode(int mode, int init_position);
     void motor_exit_feedback(void);
+    // Motor task is the sole owner of FOC and the SPI angle sensor. SENSOR_ONLY
+    // disables drive output while keeping 100Hz angle-based input alive.
+    void motor_set_sensor_only(bool enabled);
+    bool motor_is_sensor_only();
+    uint32_t motor_mode_epoch();
 
     void power_init(void);
+    // UI requests shutdown; the Arduino loop performs it as the RGB owner.
     void power_off(void);
+    void power_update(void);
+    void lcd_power_off(void);
 
     bool is_encoder_enabled(void);
     void encoder_disable(void);
@@ -90,6 +104,10 @@ namespace HAL
     bool take_wake_press();
     bool power_settings_get(PowerSettings *out);
     bool power_settings_set(const PowerSettings *settings);
+    bool power_is_dark();
+    bool power_is_dim();
+    bool power_home_requested();
+    void power_ack_home();
 }
 
 

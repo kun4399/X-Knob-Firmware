@@ -74,6 +74,10 @@ void Codex::onViewDidUnload() { if (group_) { lv_group_del(group_); group_ = nul
 void Codex::timer_cb(lv_timer_t *t) { static_cast<Codex *>(t->user_data)->update(); }
 
 void Codex::update() {
+    // All DARK rotation belongs exclusively to the low-power direction switch.
+    // Do not interpret it as menu/scene/task detents while LCD is off.
+    if (HAL::power_is_dark()) return;
+    if (HAL::power_home_requested()) return;
     HAL::CodexState s = {};
     const bool got = HAL::codex_state(&s) && s.snapshot_valid;
     const uint8_t session_count = got ? (s.session_count > 4 ? 4 : s.session_count) : 0;

@@ -166,6 +166,10 @@ void SceneEdit::select_scene(int delta) {
 }
 
 void SceneEdit::update() {
+    // All DARK rotation belongs exclusively to the low-power direction switch.
+    // Do not interpret it as menu/scene/task detents while LCD is off.
+    if (HAL::power_is_dark()) return;
+    if (HAL::power_home_requested()) return;
     const uint32_t now = millis();
     if (HAL::take_wake_press()) gesture_.consume_wake_press(HAL::encoder_is_pushed());
     const auto e = gesture_.update(HAL::encoder_is_pushed(), HAL::get_motor_position(), now);

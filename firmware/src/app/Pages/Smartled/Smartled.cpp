@@ -252,6 +252,13 @@ void Smartled::send()
 
 void Smartled::update()
 {
+    // All DARK rotation belongs exclusively to the low-power direction switch.
+    // Do not interpret it as menu/scene/task detents while LCD is off.
+    if (HAL::power_is_dark()) {
+        dirty = awaiting = scene_apply_dirty = pending_scene = false;
+        return;
+    }
+    if (HAL::power_home_requested()) return;
     const unsigned long now = millis();
     if (HAL::take_wake_press()) gesture_.consume_wake_press(HAL::encoder_is_pushed());
     GestureFSM::Event gesture;
@@ -335,6 +342,10 @@ void Smartled::update()
     HAL::SmartledState received;
     if (HAL::smartled_state(&received)) {
         state = received;
+        if (!received.online && (dirty || awaiting)) {
+            dirty = awaiting = scene_apply_dirty = pending_scene = false;
+            failed = true;
+        }
         if (received.online && received.received_ms != last_state_ms) {
             last_state_ms = received.received_ms;
             if (!dirty && !awaiting) {
@@ -351,9 +362,10 @@ void Smartled::update()
         }
         const bool modern_ack = received.modern && received.ack_received_ms >= sent_ms &&
                                 strcmp(received.last_ack_id, pending_id) == 0;
-        const bool legacy_state = !received.modern && received.received_ms >= sent_ms &&
-                                  received.received_ms != 0;
-        if (awaiting && (modern_ack || legacy_state)) {
+        const bool readback = light_control_readback_for_command(
+            received.modern, received.online, received.ok,
+            received.last_command_id, pending_id, received.received_ms, sent_ms);
+        if (awaiting && readback) {
             const bool matched = pending_scene ?
                 received.power == pending_power && received.brightness == pending_brightness &&
                     received.temperature == pending_temperature :
@@ -365,26 +377,20 @@ void Smartled::update()
                 failed = false;
                 retries = 0;
                 pending_scene = false;
-            } else if (!received.ok || modern_ack) {
-                awaiting = false;
-                failed = true;
-                pending_scene = false;
             }
+        }
+        if (awaiting && modern_ack && !received.last_ack_success) {
+            awaiting = false;
+            failed = true;
+            pending_scene = false;
         }
     }
     // Coalesce rapid encoder steps so one settled value produces one MQTT command.
     if (dirty && now - changed_ms >= 180) send();
     if (awaiting && now - sent_ms > 7000) {
-        const bool retry_scene = pending_scene;
         awaiting = false;
         pending_scene = false;
-        if (retries++ < 1) {
-            scene_apply_dirty = retry_scene;
-            dirty = true;
-            changed_ms = now - 180;
-        } else {
-            failed = true;
-        }
+        failed = true;
     }
     refresh();
 }

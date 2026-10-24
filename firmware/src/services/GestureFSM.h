@@ -25,6 +25,7 @@ public:
             if (stable_) {
                 pressed_at_ = now_ms;
                 moved_ = false;
+                pressed_delta_ = 0;
                 long_fired_ = false;
                 second_press_ = pending_click_ && now_ms - click_at_ <= kDoubleGapMs;
                 rotate_after_ = now_ms + kPressGuardMs;
@@ -61,10 +62,24 @@ public:
             return {};
         }
         if (delta) {
-            if ((int32_t)(now_ms - rotate_after_) >= 0) {
-                moved_ = stable_;
-                return {stable_ ? HOLD_ROTATE : ROTATE, delta};
+            // Suppress the undebounced edge too: a hard press usually starts
+            // moving the shaft BEFORE stable_ flips to true.
+            if (raw_ || stable_) {
+                if ((int32_t)(now_ms - rotate_after_) >= 0) {
+                    pressed_delta_ += delta;
+                    // HOLD_ROTATE requires deliberate travel, not one accidental
+                    // detent dragged by the finger while pressing.
+                    if (pressed_delta_ >= 3 || pressed_delta_ <= -3) {
+                        const int intentional = pressed_delta_;
+                        pressed_delta_ = 0;
+                        moved_ = true;
+                        return {HOLD_ROTATE, intentional};
+                    }
+                }
+                return {};
             }
+            if ((int32_t)(now_ms - rotate_after_) >= 0)
+                return {ROTATE, delta};
         }
 
         // Resolve rotation before a long press so a hold-and-turn event at
@@ -100,10 +115,11 @@ private:
     static constexpr uint32_t kDebounceMs = 25;
     static constexpr uint32_t kDoubleGapMs = 420;
     static constexpr uint32_t kLongPressMs = 1200;
-    static constexpr uint32_t kPressGuardMs = 110;
-    static constexpr uint32_t kReleaseGuardMs = 80;
+    static constexpr uint32_t kPressGuardMs = 180;
+    static constexpr uint32_t kReleaseGuardMs = 180;
     bool initialized_ = false, raw_ = false, stable_ = false;
     bool moved_ = false, pending_click_ = false, consume_wake_ = false, long_fired_ = false, second_press_ = false;
+    int pressed_delta_ = 0;
     int last_position_ = 0;
     uint32_t raw_changed_ = 0, pressed_at_ = 0, click_at_ = 0, rotate_after_ = 0;
 };

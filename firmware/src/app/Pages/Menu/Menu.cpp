@@ -8,8 +8,8 @@
 using namespace Page;
 
 namespace {
-constexpr uint32_t kAccents[] = {0xFFD4A0, 0xFFBD76, 0x8DEBFF, 0x7BECC4, 0xC4B3FF, 0xC4B3FF};
-constexpr const char *kNames[] = {"灯光控制", "场景编辑", "Codex 监控", "通知中心", "电源设置", "系统设置"};
+constexpr uint32_t kAccents[] = {0xFFD4A0, 0xFFBD76, 0x8DEBFF, 0x7BECC4, 0xC4B3FF, 0xC4B3FF, 0xFF8D85};
+constexpr const char *kNames[] = {"灯光控制", "场景编辑", "Codex 监控", "通知中心", "电源设置", "系统设置", "关机"};
 constexpr uint32_t kSlideMs = 220;
 constexpr uint32_t kSelectMs = 155;
 
@@ -67,7 +67,8 @@ void draw_symbol(lv_obj_t *(&parts)[5], int kind, int cx, int cy, float scale,
             put(0, 0, -2, 25, 25, true, 13, 2);
             put(1, 0, 13, 17, 3); put(2, 0, 20, 6, 3);
             put(3, 0, -18, 4, 4); break;
-        case 4: // power
+        case 4: // power settings and shutdown share the power glyph
+        case 6:
             put(0, 0, 1, 34, 34, true, 0, 2);
             put(1, 0, -9, 3, 20); break;
         default: // settings
@@ -128,7 +129,7 @@ void Menu::onViewLoad() {
         lv_obj_remove_style_all(dots_[i]);
         lv_obj_set_style_radius(dots_[i], LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_bg_opa(dots_[i], LV_OPA_COVER, 0);
-        lv_obj_align(dots_[i], LV_ALIGN_CENTER, -26 + i * 10, 100);
+        lv_obj_align(dots_[i], LV_ALIGN_CENTER, -(kItemCount - 1) * 5 + i * 10, 100);
     }
     group_ = lv_group_create();
     lv_group_add_obj(group_, root);
@@ -175,7 +176,7 @@ void Menu::render(uint32_t now) {
     lv_obj_set_style_shadow_color(ring_, lv_color_hex(accent), 0);
     lv_obj_set_style_shadow_width(ring_, 10 + (int)(pulse * 12), 0);
     lv_obj_set_style_shadow_opa(ring_, (lv_opa_t)(35 + pulse * 95), 0);
-    lv_label_set_text_fmt(index_, "%02d / 06", selected_ + 1);
+    lv_label_set_text_fmt(index_, "%02d / %02d", selected_ + 1, kItemCount);
 
     const float slide = transition_at_ && age < kSlideMs ? 1.0f - ease : 0.0f;
     const int incoming_x = (int)(transition_direction_ * 67 * slide);
@@ -200,10 +201,15 @@ void Menu::open_selected() {
         case 3: Manager->Push("Pages/Notifications"); break;
         case 4: Manager->Push("Pages/Power"); break;
         case 5: Manager->Push("Pages/Settings"); break;
+        case 6: HAL::power_off(); break;
     }
 }
 
 void Menu::update() {
+    // All DARK rotation belongs exclusively to the low-power direction switch.
+    // Do not interpret it as menu/scene/task detents while LCD is off.
+    if (HAL::power_is_dark()) return;
+    if (HAL::power_home_requested()) return;
     const uint32_t now = millis();
     if (HAL::take_wake_press()) gesture_.consume_wake_press(HAL::encoder_is_pushed());
     const auto e = gesture_.update(HAL::encoder_is_pushed(), HAL::get_motor_position(), now);

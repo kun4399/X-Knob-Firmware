@@ -8,6 +8,8 @@ firmware/.vscode/
 macos/companion/.venv/
 macos/companion/.env
 macos/companion/.env.*
+macos/companion/build/
+macos/companion/dist/
 
 # Python caches and generated firmware artifacts
 **/__pycache__/

@@ -38,8 +38,13 @@ private:
     uint32_t last_face_render_at_ = 0;
     uint32_t light_seen_at_ = 0, event_revision_ = 0, ignore_motor_until_ = 0;
     uint8_t retries_ = 0;
+    uint32_t codex_event_at_ = 0;
+    uint32_t motor_epoch_ = 0;
+    bool last_power_intent_known_ = false;
+    bool last_power_intent_ = false;
     char pending_id_[64] = {};
     void update();
+    void cancel_command();
     void handle(GestureFSM::Event event, uint32_t now);
     void send(uint32_t now);
     void sync_control_motor_mode(uint32_t now);

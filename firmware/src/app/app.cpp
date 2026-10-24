@@ -46,7 +46,14 @@ void App_Init()
     manager.Install("Power", "Pages/Power");
     manager.Install("WiFi","Pages/WiFi");
     manager.SetGlobalLoadAnimType(PageManager::LOAD_ANIM_OVER_TOP, 500);
-    manager.Push("Pages/Startup");
+    // Face is the permanent stack root. No two-second splash on battery wake.
+    manager.Push("Pages/Face");
+    lv_timer_create([](lv_timer_t *) {
+        // Invoked on the LVGL thread only. Dark detection never navigates
+        // directly from the low-power FreeRTOS task.
+        if (HAL::power_home_requested() && manager.BackHome())
+            HAL::power_ack_home();
+    }, 120, nullptr);
 
 
     // ACCOUNT_SEND_NOTIFY_CMD(Storage, STORAGE_CMD_LOAD);

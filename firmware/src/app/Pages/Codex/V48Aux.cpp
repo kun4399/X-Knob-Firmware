@@ -10,8 +10,8 @@
 using namespace Page;
 namespace {
 constexpr uint32_t kAccent = 0x8DEBFF;
-const uint16_t kDimChoices[] = {15, 30, 45, 60};
-const uint16_t kStandbyChoices[] = {120, 180, 300, 600};
+const uint16_t kDimChoices[] = {10, 15, 20, 30, 45, 60};
+const uint16_t kStandbyChoices[] = {45, 60, 120, 180, 300, 600};
 
 lv_obj_t *aux_label(lv_obj_t *parent, const lv_font_t *font, uint32_t color, int w, int h, int y, int x=0) {
     auto *o = lv_label_create(parent); lv_obj_set_size(o, w, h); lv_label_set_long_mode(o, LV_LABEL_LONG_CLIP);
@@ -103,13 +103,13 @@ void V48Aux::render() {
         HAL::PowerSettings settings = {};
         HAL::power_settings_get(&settings);
         if (!editing_) edit_settings_ = settings;
-        const char *labels[]={"自动调暗","联网待机","自动关机","重要通知"};
+        const char *labels[]={"自动调暗","联网待机","自动深睡","重要通知"};
         char values[4][16];
         snprintf(values[0], sizeof(values[0]), "%u 秒", (unsigned)edit_settings_.dim_after_seconds);
         if (edit_settings_.standby_after_seconds % 60 == 0)
             snprintf(values[1], sizeof(values[1]), "%u 分", (unsigned)(edit_settings_.standby_after_seconds / 60));
         else snprintf(values[1], sizeof(values[1]), "%u 秒", (unsigned)edit_settings_.standby_after_seconds);
-        snprintf(values[2], sizeof(values[2]), "未校准");
+        snprintf(values[2], sizeof(values[2]), "保持直控");
         snprintf(values[3], sizeof(values[3]), "%s", edit_settings_.important_notifications ? "开启" : "关闭");
         for(int i=0;i<4;++i){
             lv_obj_clear_flag(row_frames_[i],LV_OBJ_FLAG_HIDDEN);
@@ -124,6 +124,8 @@ void V48Aux::render() {
             lv_obj_set_style_bg_opa(row_frames_[i], selected ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
             lv_obj_set_style_text_color(rows_[i], lv_color_hex(text_color), 0);
             lv_obj_set_style_text_color(row_values_[i], lv_color_hex(value_color), 0);
+            lv_obj_set_style_text_font(row_values_[i],
+                i == 2 ? &xknob_round_ui_12 : &xknob_round_ui_20, 0);
             lv_label_set_text(rows_[i], labels[i]);
             lv_label_set_text(row_values_[i], values[i]);
             if (save_failed_ && selected) lv_label_set_text(row_values_[i], "失败");
@@ -160,6 +162,10 @@ void V48Aux::render() {
     }
 }
 void V48Aux::update() {
+    // All DARK rotation belongs exclusively to the low-power direction switch.
+    // Do not interpret it as menu/scene/task detents while LCD is off.
+    if (HAL::power_is_dark()) return;
+    if (HAL::power_home_requested()) return;
     if(HAL::take_wake_press()) gesture_.consume_wake_press(HAL::encoder_is_pushed());
     const auto e=gesture_.update(HAL::encoder_is_pushed(),HAL::get_motor_position(),millis());
     if (e.kind == GestureFSM::DOUBLE_CLICK) { Manager->BackHome(); return; }
@@ -183,10 +189,10 @@ void V48Aux::update() {
             save_failed_ = false;
             if (editing_) {
                 if (selected_row_ == 0) {
-                    edit_option_ = menu_navigation_apply_delta(edit_option_, e.delta, 4);
+                    edit_option_ = menu_navigation_apply_delta(edit_option_, e.delta, 6);
                     edit_settings_.dim_after_seconds = kDimChoices[edit_option_];
                 } else if (selected_row_ == 1) {
-                    edit_option_ = menu_navigation_apply_delta(edit_option_, e.delta, 4);
+                    edit_option_ = menu_navigation_apply_delta(edit_option_, e.delta, 6);
                     edit_settings_.standby_after_seconds = kStandbyChoices[edit_option_];
                 } else if (selected_row_ == 3) {
                     if (e.delta % 2 != 0)
@@ -211,9 +217,9 @@ void V48Aux::update() {
             } else {
                 HAL::power_settings_get(&edit_settings_);
                 if (selected_row_ == 0)
-                    edit_option_ = choice_index(edit_settings_.dim_after_seconds, kDimChoices, 4);
+                    edit_option_ = choice_index(edit_settings_.dim_after_seconds, kDimChoices, 6);
                 else if (selected_row_ == 1)
-                    edit_option_ = choice_index(edit_settings_.standby_after_seconds, kStandbyChoices, 4);
+                    edit_option_ = choice_index(edit_settings_.standby_after_seconds, kStandbyChoices, 6);
                 else edit_option_ = edit_settings_.important_notifications ? 1 : 0;
                 editing_ = true;
                 HAL::update_motor_mode(MOTOR_UNBOUND_FINE_DETENTS, HAL::get_motor_position());

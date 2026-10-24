@@ -4,8 +4,12 @@
 
 - `firmware/` is the ESP32-S3 PlatformIO project. Build it from that directory
   with `pio run`.
-- `macos/companion/` is a separate Python/macOS service. Run its tests from
-  that directory; do not put it in the PlatformIO source tree.
+- `macos/companion/` owns the native menu-bar app and bundled Python engine.
+  Build with `app/build_app.py` and run its Python/bundle tests there; do not
+  put these sources or runtime output in the PlatformIO source tree.
+  Preserve menu-only operation and clean child shutdown; do not revive the
+  retired LaunchAgent alongside the app. Hook changes must preserve unrelated
+  entries, remain reversible, and never edit Codex trust records.
 - `hardware/` contains reference BOM, CAD, and images. `docs/` contains the
   maintained explanations and verification record.
 - The ESP32-WROOM-32 light gateway is maintained in the separate SmartLED

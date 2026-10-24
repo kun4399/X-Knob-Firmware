@@ -23,16 +23,37 @@ matching readback. Once it sees V1 state, it uses these topics:
 | Gateway → knob | `xknob/v1/light/main/availability` | Retained `online`/`offline` |
 
 `desired` can contain `power`, `brightness_percent`, and
-`color_temperature_kelvin`. The knob checks the ID, ACK, and readback before
-showing a confirmed result. On timeout it retries once with a new ID. Broker
-delivery alone does not count as a successful light change.
+`color_temperature_kelvin`. The knob confirms only an online, successful BLE
+readback with the same command ID and matching requested values. State may
+arrive before ACK and confirm immediately. A successful ACK alone cannot
+confirm; a failed ACK marks the pending command as failed. Timeout, page exit,
+dark transition and loss of connectivity cancel old UI intent; timeout never
+replays it with a new ID. Reconnection drops queued output and requests actual
+state. A new opposite direction remains actionable while a command is pending.
+
+The gateway polls idle BLE state every 30 seconds; writes still trigger
+immediate readback. The knob's light TTL is 90 seconds. Wi-Fi modem sleep is
+enabled and MQTT keepalive is 60 seconds; neither radio nor angle sampling is
+shut down automatically in DARK. Physical latency remains unmeasured.
 
 Mac Companion publishes status, non-retained events, usage, and availability
 under `xknob/v1/codex/<configured-host-id>/`. Set `XKNOB_MAC_ID` in its private
-environment file to match `XK_CODEX_HOST_ID` in `firmware/src/config.h`, and
+environment file to match `XK_CODEX_HOST_ID` in ignored `firmware/src/secrets.h`, and
 restrict the MQTT ACL accordingly. Do not commit a real device or account ID. Its
 MQTT account should have no permission to write light commands. Hooks send only
 allowlisted metadata; `Stop` maps to “本轮结束”.
+
+Companion status is published on semantic change or an important event, plus
+a 120-second heartbeat. It contains `boot_id` and `event_seq`; live events
+contain the same `boot_id` and monotonic `seq`. The first status after each
+connection establishes an event high-water mark. Events before that baseline,
+from an unknown boot, or at/below the last accepted sequence are silent. This
+prevents retained historical approvals and QoS duplicates from replaying RGB
+alerts. Upgrade Companion together with the knob; an older status without the
+watermark remains displayable but cannot authorize live alert playback.
+Status carries at most four session entries to fit the bounded parser; counts
+still include all sessions. The source TTL is 240 seconds, allowing missed
+heartbeats. Ordinary events never publish to light topics or wake the LCD.
 
 Example state:
 

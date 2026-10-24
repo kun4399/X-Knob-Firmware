@@ -34,6 +34,7 @@ void setup() {
 }
 
 void loop() {
+    HAL::power_update();
     unsigned long currentMillis = millis();
 
     strip_start(currentMillis);

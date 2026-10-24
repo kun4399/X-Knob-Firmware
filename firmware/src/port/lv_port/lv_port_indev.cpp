@@ -74,6 +74,28 @@ static void encoder_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
     now_num = HAL::get_motor_position();
 
     data->enc_diff = 0;
+    static uint32_t mode_epoch = 0;
+    static bool suppress_press = false;
+    const uint32_t epoch = HAL::motor_mode_epoch();
+    const bool pressed = HAL::encoder_is_pushed();
+    // Legacy settings widgets must not consume a dark detent or the press
+    // that wakes the screen while navigation back to Face is still pending.
+    if (HAL::power_is_dark() || HAL::power_home_requested() ||
+        HAL::motor_is_sensor_only()) {
+        suppress_press = suppress_press || pressed;
+        old_num = now_num;
+        mode_epoch = epoch;
+        data->state = LV_INDEV_STATE_REL;
+        return;
+    }
+    if (epoch != mode_epoch || !HAL::is_encoder_enabled()) old_num = now_num;
+    mode_epoch = epoch;
+    if (suppress_press) {
+        suppress_press = pressed;
+        old_num = now_num;
+        data->state = LV_INDEV_STATE_REL;
+        return;
+    }
     if (HAL::is_encoder_enabled()) {
         if (now_num > old_num) {
             data->enc_diff++;
@@ -85,5 +107,5 @@ static void encoder_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 
     }
 
-    data->state =  HAL::encoder_is_pushed() ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+    data->state = pressed ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
 }

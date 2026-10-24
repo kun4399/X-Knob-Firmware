@@ -29,8 +29,13 @@
 // Default MQTT topic prefix used only when NVS is initialized for the first time.
 #define MQTT_HOST               "home"
 
-// Set this locally to the same non-identifying host ID used by Mac Companion.
-// The public default is deliberately a placeholder; keep deployment IDs out of Git.
+// Read optional private build settings before the public host placeholder.
+// This lets deployment metadata live in the ignored header, never in Git.
+#if __has_include("secrets.h")
+#include "secrets.h"
+#endif
+
+// Match Mac Companion's XKNOB_MAC_ID via the ignored secrets.h override.
 #ifndef XK_CODEX_HOST_ID
 #define XK_CODEX_HOST_ID "example-host"
 #endif

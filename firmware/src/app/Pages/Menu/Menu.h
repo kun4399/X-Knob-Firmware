@@ -12,7 +12,7 @@ public:
     void onViewWillDisappear() override;
     void onViewDidUnload() override;
 private:
-    static constexpr int kItemCount = 6;
+    static constexpr int kItemCount = 7;
     lv_obj_t *title_ = nullptr, *ring_ = nullptr, *inner_ring_ = nullptr;
     lv_obj_t *name_ = nullptr, *previous_name_ = nullptr, *index_ = nullptr;
     lv_obj_t *icon_parts_[3][5] = {};

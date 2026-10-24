@@ -140,6 +140,7 @@ void Face::onViewLoad() {
 }
 
 void Face::onViewWillAppear() {
+    cancel_command();
     HAL::mqtt_init();
     HAL::smartled_command("state"); // Legacy request during compatibility migration.
     screen_ = NORMAL;
@@ -160,6 +161,7 @@ void Face::onViewWillAppear() {
 }
 
 void Face::onViewDidDisappear() {
+    cancel_command();
     if (timer_) { lv_timer_del(timer_); timer_ = nullptr; }
 }
 
@@ -173,18 +175,24 @@ void Face::sync_control_motor_mode(uint32_t now) {
     if (screen_ == SCENES) {
         mode = MOTOR_UNBOUND_COARSE_DETENTS;
         position = HAL::get_motor_position();
-    } else if (!light_control_can_adjust(light_.online, light_.power && power_)) {
-        // A single detent with hard stops in both directions prevents the
-        // rotor from drifting while the lamp is off or its state is unknown.
-        mode = MOTOR_LOCKED_DETENT;
     } else if (screen_ == TEMPERATURE) {
         mode = MOTOR_BOUNDED_CCT_DETENTS;
         position = light_control_face_cct_position(temperature_);
-    } else {
+    } else if (screen_ == BRIGHTNESS) {
         mode = MOTOR_BOUNDED_BRIGHTNESS_DETENTS;
         position = light_control_brightness_detent_position(brightness_);
+    } else {
+        // User-selected switch feel: two endpoints with one snap between
+        // OFF (0) and ON (1), using the existing bounded switch profile.
+        // A pending opposite intent wins over an older gateway readback.
+        mode = MOTOR_ON_OFF_STRONG_DETENTS;
+        position = (pending_ || dirty_) ? (power_ ? 1 : 0) :
+            light_.online ? (light_.power ? 1 : 0) :
+            (HAL::get_motor_position() > 0 ? 1 : 0);
     }
-    if (control_motor_mode_ == mode) return;
+    if (control_motor_mode_ == mode &&
+        (mode != MOTOR_ON_OFF_STRONG_DETENTS ||
+         HAL::get_motor_position() == position)) return;
     HAL::update_motor_mode(mode, position);
     control_motor_mode_ = static_cast<int8_t>(mode);
     if (mode == MOTOR_BOUNDED_CCT_DETENTS)
@@ -202,6 +210,10 @@ void Face::draw_cb(lv_event_t *e) {
 void Face::handle(GestureFSM::Event event, uint32_t now) {
     if (event.kind == GestureFSM::NONE) return;
     if (event.kind == GestureFSM::DOUBLE_CLICK) {
+        if (screen_ != NORMAL) {
+            screen_ = NORMAL;
+            return;
+        }
         Manager->Push("Pages/Menu");
         return;
     }
@@ -216,28 +228,59 @@ void Face::handle(GestureFSM::Event event, uint32_t now) {
         return;
     }
     if (event.kind == GestureFSM::SINGLE_CLICK) {
-        // Scene previews remain navigable while disconnected, but applying a
-        // scene or toggling power requires an online gateway readback.
-        if (!light_.online) return;
         if (screen_ == SCENES) {
-            LightScene scene = scenes_.get(selected_scene_);
+            if (!light_.online) { failed_ = true; return; }
+            const LightScene scene = scenes_.get(selected_scene_);
             brightness_ = scene.brightness;
             temperature_ = scene.temperature;
             power_ = true;
             change_power_ = change_brightness_ = change_temperature_ = true;
+            dirty_ = true;
+            changed_at_ = now - 150;
             screen_ = BRIGHTNESS;
+        } else if (screen_ == BRIGHTNESS) {
+            screen_ = TEMPERATURE;
+        } else if (screen_ == TEMPERATURE) {
+            screen_ = BRIGHTNESS;
+        } else if (!light_.online) {
+            failed_ = true;
+            screen_ = NORMAL;
+        } else if (!light_.power) {
+            // Precision adjustment needs a lit lamp. Explain the new easy
+            // direction gesture instead of silently entering a locked dial.
+            screen_ = LIGHT_OFF;
         } else {
-            power_ = !power_;
-            change_power_ = true;
-            if (power_) change_brightness_ = change_temperature_ = true;
-            else screen_ = NORMAL;
+            // Hard physical click is NOT a daily on/off switch.
+            screen_ = BRIGHTNESS;
         }
-        dirty_ = true;
-        changed_at_ = now - 150;
         overlay_at_ = now;
         return;
     }
-    if (event.kind == GestureFSM::ROTATE || event.kind == GestureFSM::HOLD_ROTATE) {
+    if (event.kind == GestureFSM::HOLD_ROTATE) {
+        // Hard press can drag the encoder. Face never maps HOLD_ROTATE to
+        // a light command; precision CCT is selected using a short click.
+        return;
+    }
+    if (event.kind == GestureFSM::ROTATE) {
+        if (screen_ == NORMAL || screen_ == LIGHT_OFF) {
+            // This is absolute direction, NOT toggle. Reverse movement
+            // remains meaningful even if a prior BLE command is still pending.
+            const bool desired = event.delta > 0;
+            if (!light_.online) { failed_ = true; overlay_at_ = now; return; }
+            if ((!last_power_intent_known_ || last_power_intent_ != desired || failed_) &&
+                (pending_ || dirty_ || light_.power != desired)) {
+                failed_ = false; // user explicitly retried a failed command
+                power_ = desired;
+                last_power_intent_ = desired;
+                last_power_intent_known_ = true;
+                change_power_ = true;
+                change_brightness_ = change_temperature_ = false;
+                dirty_ = true;
+                changed_at_ = now - 150; // dispatch direction commands promptly
+                overlay_at_ = now;
+            }
+            return;
+        }
         if (screen_ == SCENES) {
             selected_scene_ = (selected_scene_ + event.delta % SceneStore::count + SceneStore::count) % SceneStore::count;
             SceneStore::select(selected_scene_);
@@ -245,20 +288,13 @@ void Face::handle(GestureFSM::Event event, uint32_t now) {
             return;
         }
         if (!light_control_can_adjust(light_.online, light_.power && power_)) {
-            if (light_control_should_show_off_ui(
-                    light_.online, light_.power, true)) {
-                screen_ = LIGHT_OFF;
-                overlay_at_ = now;
-            }
+            failed_ = !light_.online;
             return;
         }
-        if (event.kind == GestureFSM::HOLD_ROTATE) {
-            if (control_motor_mode_ != MOTOR_BOUNDED_CCT_DETENTS)
-                cct_detent_position_ = light_control_face_cct_position(temperature_);
+        if (screen_ == TEMPERATURE) {
             cct_detent_position_ = light_control_apply_delta(
                 cct_detent_position_, event.delta, 0, kFaceCctDetentCount);
             temperature_ = light_control_face_cct_temperature(cct_detent_position_);
-            screen_ = TEMPERATURE;
             change_temperature_ = power_;
         } else {
             brightness_ = clamp_int(brightness_ + event.delta, 1, 100);
@@ -287,15 +323,28 @@ void Face::send(uint32_t now) {
     sent_at_ = now;
 }
 
+void Face::cancel_command() {
+    dirty_ = pending_ = false;
+    change_power_ = change_brightness_ = change_temperature_ = false;
+    last_power_intent_known_ = false;
+    pending_id_[0] = 0;
+    retries_ = 0;
+}
+
 void Face::choose_face(uint32_t now) {
     if (screen_ != NORMAL) return;
     uint8_t chosen = 0;
-    if (!light_.online || !codex_.source_online || !codex_.snapshot_valid || equal(codex_.quality, "stale")) chosen = 30;
-    else if (equal(codex_.phase, "approval_pending")) chosen = 26;
-    else if (equal(codex_.phase, "running")) chosen = 25;
-    else if (equal(codex_.event_kind, "codex.task.failed")) chosen = 28;
-    else if (equal(codex_.event_kind, "codex.task.completed_verified")) chosen = 27;
-    else if (equal(codex_.event_kind, "codex.notification")) chosen = 31;
+    if (codex_.source_online && codex_.snapshot_valid &&
+        equal(codex_.phase, "approval_pending")) chosen = 26;
+    else if (codex_.source_online && codex_.snapshot_valid &&
+             codex_event_at_ && now - codex_event_at_ < 3300 &&
+             equal(codex_.phase, "running")) chosen = 25;
+    else if (codex_event_at_ && now - codex_event_at_ < 3300 &&
+             equal(codex_.event_kind, "codex.task.failed")) chosen = 28;
+    else if (codex_event_at_ && now - codex_event_at_ < 3300 &&
+             equal(codex_.event_kind, "codex.task.completed_verified")) chosen = 27;
+    else if (codex_event_at_ && now - codex_event_at_ < 3300 &&
+             equal(codex_.event_kind, "codex.notification")) chosen = 31;
     else if (now - face_at_ > 12000) { chosen = esp_random() % 25; face_at_ = now; }
     else chosen = face_id_ < 25 ? face_id_ : 0;
     if (chosen != face_id_) { face_id_ = chosen; face_at_ = now; }
@@ -352,7 +401,7 @@ void Face::render_labels() {
         lv_label_set_text(caption_, "已关闭");
         lv_obj_align(hint_, LV_ALIGN_TOP_MID, 0, 200);
         lv_obj_set_height(hint_, 30);
-        lv_label_set_text(hint_, "短按开灯 · 恢复上次亮度");
+        lv_label_set_text(hint_, "顺时针旋转开灯");
         lv_obj_set_style_text_color(hint_, lv_color_hex(0x8296A7), 0);
         return;
     }
@@ -362,13 +411,20 @@ void Face::render_labels() {
         show(drawing_); show(caption_);
         lv_obj_align(caption_, LV_ALIGN_TOP_MID, 0, 199);
         const char *text = "";
-        if (!light_.online || !codex_.source_online) text = "连接断开";
-        else if (equal(codex_.phase, "approval_pending")) text = "待审批";
-        else if (equal(codex_.phase, "running")) text = "工作中";
-        else if (equal(codex_.phase, "turn_stopped_unverified")) text = "本轮结束";
-        else if (equal(codex_.event_kind, "codex.task.completed_verified")) text = "任务完成";
-        else if (equal(codex_.event_kind, "codex.task.failed")) text = "任务失败";
-        else if (equal(codex_.event_kind, "codex.notification")) text = "新消息";
+        const bool codex_live = codex_.source_online && codex_.snapshot_valid;
+        // Mac sleeping must not leave a stale work/approval caption on the pet.
+        if (!light_.online && failed_ && millis() - overlay_at_ < 3500)
+            text = "灯带暂不可用";
+        else if (codex_live && equal(codex_.phase, "approval_pending")) text = "待审批";
+        else if (codex_live && codex_event_at_ && millis() - codex_event_at_ < 3300 &&
+                 equal(codex_.phase, "running")) text = "工作中";
+        else if (codex_live && equal(codex_.phase, "turn_stopped_unverified")) text = "本轮结束";
+        else if (codex_live && codex_event_at_ && millis() - codex_event_at_ < 3300 &&
+                 equal(codex_.event_kind, "codex.task.completed_verified")) text = "任务完成";
+        else if (codex_live && codex_event_at_ && millis() - codex_event_at_ < 3300 &&
+                 equal(codex_.event_kind, "codex.task.failed")) text = "任务失败";
+        else if (codex_live && codex_event_at_ && millis() - codex_event_at_ < 3300 &&
+                 equal(codex_.event_kind, "codex.notification")) text = "新消息";
         lv_label_set_text(caption_, text);
         const uint32_t age = millis() - face_at_;
         const float linger = age < 1250 ? 1.0f :
@@ -416,10 +472,35 @@ void Face::render_labels() {
 
 void Face::update() {
     uint32_t now = millis();
-    if (HAL::take_wake_press()) gesture_.consume_wake_press(HAL::encoder_is_pushed());
+    // Dark turns are handled globally by the always-ready power task. No
+    // LVGL animation and no page gesture can consume a black-screen turn.
+    if (HAL::power_is_dark()) {
+        cancel_command();
+        screen_ = NORMAL;
+        return;
+    }
+    if (HAL::power_home_requested()) return;
+    const auto input = HAL::motor_input();
+    if (input.epoch != motor_epoch_) {
+        motor_epoch_ = input.epoch;
+        gesture_.rebase(input.position);
+        ignore_motor_until_ = now + 80;
+    }
+    if (HAL::take_wake_press()) {
+        cancel_command();
+        screen_ = NORMAL;
+        gesture_ = GestureFSM();
+        gesture_.update(HAL::encoder_is_pushed(), input.position, now);
+        gesture_.consume_wake_press(HAL::encoder_is_pushed());
+        ignore_motor_until_ = now + 180;
+    }
     HAL::SmartledState light;
     if (HAL::smartled_state(&light)) {
         light_ = light;
+        if (!light.online && (pending_ || dirty_)) {
+            cancel_command();
+            failed_ = true;
+        }
         if (screen_ == LIGHT_OFF && light_.online && light_.power)
             screen_ = NORMAL;
         if ((screen_ == BRIGHTNESS || screen_ == TEMPERATURE) &&
@@ -427,8 +508,9 @@ void Face::update() {
             screen_ = NORMAL;
         if (light.received_ms && light.received_ms != light_seen_at_) {
             light_seen_at_ = light.received_ms;
-            if (pending_ && ((light.modern && equal(light.last_command_id, pending_id_)) ||
-                             (!light.modern && light.received_ms >= sent_at_))) {
+            if (pending_ && light_control_readback_for_command(
+                    light.modern, light.online, light.ok, light.last_command_id,
+                    pending_id_, light.received_ms, sent_at_)) {
                 bool matched = (!change_power_ || light.power == power_) &&
                     (!change_brightness_ || light.brightness == brightness_) &&
                     (!change_temperature_ || light.temperature == temperature_);
@@ -444,6 +526,7 @@ void Face::update() {
                 temperature_ = light.temperature;
                 power_ = light.power;
                 if (control_value_changed) control_motor_mode_ = -1;
+                last_power_intent_known_ = false;
             }
         }
         if (pending_ && equal(light.last_ack_id, pending_id_) && !light.last_ack_success &&
@@ -451,31 +534,29 @@ void Face::update() {
             pending_ = false; failed_ = true;
         }
     }
-    const bool endstop_contact = HAL::motor_endstop_active();
-    if (screen_ != SCENES &&
-        light_control_should_show_off_ui(light_.online, light_.power && power_,
-                                         endstop_contact)) {
-        screen_ = LIGHT_OFF;
-        overlay_at_ = now;
-    }
-    if (screen_ != SCENES && !light_.online)
+    // Never change the face into a blocked hard-stop page merely because the
+    // bulb is off. Off-state rotation is the PRIMARY physical operation.
+    if (screen_ != SCENES && !light_.online && screen_ != NORMAL)
         screen_ = NORMAL;
     HAL::codex_state(&codex_);
     if (codex_.event_revision != event_revision_) {
         event_revision_ = codex_.event_revision;
-        HAL::power_note_activity();
+        codex_event_at_ = now;
+        // Do not awaken the LCD merely because Codex used a tool or published
+        // an event. Important events stay in the snapshot for next wake.
     }
-    if (now < ignore_motor_until_) gesture_.rebase(HAL::get_motor_position());
-    else handle(gesture_.update(HAL::encoder_is_pushed(), HAL::get_motor_position(), now), now);
+    if (static_cast<int32_t>(now - ignore_motor_until_) < 0 || input.sensor_only)
+        gesture_.rebase(input.position);
+    else handle(gesture_.update(HAL::encoder_is_pushed(), input.position, now), now);
     if (dirty_ && now - changed_at_ >= 150) send(now);
     if (pending_ && now - sent_at_ > 7000) {
-        pending_ = false;
-        if (retries_++ < 1) { dirty_ = true; changed_at_ = now - 150; }
-        else failed_ = true;
+        // A later user action may supersede this intent while a readback is
+        // delayed. Timeout never replays an old command with a fresh ID.
+        cancel_command();
+        failed_ = true;
     }
     if ((screen_ == BRIGHTNESS || screen_ == TEMPERATURE) && now - overlay_at_ > 1800) screen_ = NORMAL;
-    if (light_control_off_ui_expired(screen_ == LIGHT_OFF && !endstop_contact,
-                                     now, overlay_at_))
+    if (light_control_off_ui_expired(screen_ == LIGHT_OFF, now, overlay_at_))
         screen_ = NORMAL;
     sync_control_motor_mode(now);
     choose_face(now);
@@ -484,20 +565,23 @@ void Face::update() {
         screen_ == TEMPERATURE ? STRIP_LIGHT_CCT :
         face_id_ == 26 ? STRIP_APPROVAL : face_id_ == 25 ? STRIP_WORKING :
         face_id_ == 30 ? STRIP_OFFLINE : STRIP_IDLE;
-    strip_set_state(led, brightness_, temperature_, event_revision_);
+    const bool important_event = equal(codex_.event_kind, "codex.approval.requested");
+    strip_set_state(led, brightness_, temperature_, important_event ? event_revision_ : 0);
     render_labels();
     // The SVG-to-LVGL face renderer expands filled paths into software-drawn
     // triangles. Keep gesture/state sampling at 30 Hz, but cap face redraws at
     // 10 Hz so LVGL yields between animation frames instead of monopolizing
     // the core long enough to starve the idle task watchdog.
     if (screen_ == NORMAL &&
-        (last_face_render_at_ == 0 || now - last_face_render_at_ >= 100)) {
+        (last_face_render_at_ == 0 || now - last_face_render_at_ >=
+            (HAL::power_is_dim() ? 250U : 100U))) {
         last_face_render_at_ = now;
         lv_obj_invalidate(drawing_);
     }
 }
 
 void Face::draw(const lv_area_t *clip) {
+    if (HAL::power_is_dark()) return;
     if (screen_ != NORMAL || !clip) return;
     lv_area_t area;
     lv_obj_get_coords(drawing_, &area);

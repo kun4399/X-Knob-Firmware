@@ -1,6 +1,7 @@
 #include "hal/hal.h"
 #include "motor.h"
 #include "services/LightControl.h"
+#include "services/AlwaysReadyPolicy.h"
 #include <SimpleFOC.h>
 #include "app/Accounts/Account_Master.h"
 #include "esp_log.h"
@@ -166,7 +167,7 @@ static XKnobConfig x_knob_configs[] = {
         .detent_strength_unit = 3.2,
         .endstop_strength_unit = 3.5,
         .snap_point = 1.1,
-        "Locked while light is off or gateway is offline"
+        "Legacy locked detent (not used on the face)"
     },
 
 };
@@ -243,14 +244,32 @@ static float CLAMP(const float value, const float low, const float high)
 }
 
 struct MotorRequest {
-    enum { MODE, PULSE } type;
+    enum { MODE, PULSE, SENSOR_MODE } type;
     int mode;
     int position;
     uint8_t strength;
     uint16_t duration_ms;
     bool must_play;
+    bool sensor_only;
 };
+static volatile uint32_t motor_mode_generation = 0;
+static volatile bool sensor_only_active = false;
 static QueueHandle_t motor_requests;
+static portMUX_TYPE motor_input_mux = portMUX_INITIALIZER_UNLOCKED;
+static HAL::MotorInput published_input = {};
+
+static void publish_motor_input() {
+    portENTER_CRITICAL(&motor_input_mux);
+    published_input = {motor_config.position, motor_mode_generation, sensor_only_active};
+    portEXIT_CRITICAL(&motor_input_mux);
+}
+
+HAL::MotorInput HAL::motor_input() {
+    portENTER_CRITICAL(&motor_input_mux);
+    const MotorInput input = published_input;
+    portEXIT_CRITICAL(&motor_input_mux);
+    return input;
+}
 
 static void enqueue_motor_pulse(int strength, int duration_ms, bool must_play)
 {
@@ -263,6 +282,18 @@ static void enqueue_motor_pulse(int strength, int duration_ms, bool must_play)
     xQueueSend(motor_requests, &request, pdMS_TO_TICKS(20));
 }
 
+void HAL::motor_set_sensor_only(bool enabled)
+{
+    if (!motor_requests) return;
+    MotorRequest request = {};
+    request.type = MotorRequest::SENSOR_MODE;
+    request.sensor_only = enabled;
+    xQueueSend(motor_requests, &request, 0);
+}
+
+uint32_t HAL::motor_mode_epoch() { return motor_input().epoch; }
+bool HAL::motor_is_sensor_only() { return motor_input().sensor_only; }
+
 void HAL::motor_exit_feedback(void)
 {
     // Preserve the original X-Knob checkout pulse shape; only explicit
@@ -273,7 +304,7 @@ void HAL::motor_exit_feedback(void)
 
 int HAL::get_motor_position(void)
 {
-    return motor_config.position;
+    return motor_input().position;
 }
 
 void HAL::update_motor_mode(int mode , int init_position)
@@ -324,18 +355,62 @@ void TaskMotorUpdate(void *pvParameters)
     uint16_t pending_duration = 0;
     float pending_amplitude = 0;
     bool pending_must_play = false;
+    bool sensor_only = false;
+    float last_angle = 0.0f;
+    float accumulated_angle = 0.0f;
+    uint32_t last_sensor_read = 0;
     while(1) {
         MotorRequest request;
         while (xQueueReceive(motor_requests, &request, 0) == pdTRUE) {
             if (request.type == MotorRequest::MODE) {
                 motor_config = x_knob_configs[request.mode];
                 motor_config.position = request.position;
+                accumulated_angle = 0;
+                last_angle = readMySensorCallback();
+                ++motor_mode_generation;
                 #if XK_INVERT_ROTATION
                     current_detent_center = -motor.shaft_angle;
                 #else
                     current_detent_center = motor.shaft_angle;
                 #endif
-            } else {
+            } else if (request.type == MotorRequest::SENSOR_MODE) {
+                if (request.sensor_only && !sensor_only) {
+                    // Never write motor PWM or run FOC in sensor-only mode.
+                    // One motor task performs both disable and future enable.
+                    motor.move(0);
+                    motor.disable();
+                    sensor_only = true;
+                    sensor_only_active = true;
+                    last_angle = readMySensorCallback();
+                    accumulated_angle = 0;
+                    last_sensor_read = millis();
+                    pulse_pending = false;
+                    pulse_duration = 0;
+                    ++motor_mode_generation;
+                } else if (!request.sensor_only && sensor_only) {
+                    sensor_only = false;
+                    sensor_only_active = false;
+                    // Refresh the same calibrated coordinate used by FOC.
+                    // shaft_angle otherwise still describes the pre-dark rotor.
+                    sensor.update();
+                    motor.shaft_angle = motor.shaftAngle();
+                    #if XK_INVERT_ROTATION
+                        current_detent_center = -motor.shaft_angle;
+                    #else
+                        current_detent_center = motor.shaft_angle;
+                    #endif
+                    // SimpleFOC 2.2.3 has no reset() method. Reconstruct only
+                    // the controller's history, preserving its configured gains.
+                    motor.PID_velocity = PIDController(motor.PID_velocity.P,
+                        motor.PID_velocity.I, motor.PID_velocity.D,
+                        motor.PID_velocity.output_ramp, motor.PID_velocity.limit);
+                    idle_check_velocity_ewma = 0;
+                    last_idle_start = 0;
+                    motor.enable();
+                    accumulated_angle = 0;
+                    ++motor_mode_generation;
+                }
+            } else if (!sensor_only) {
                 // Keep the newest haptic until the rotor settles. Starting the
                 // timer only then prevents a fast twist from consuming the pulse.
                 if (!pulse_pending || !pending_must_play || request.must_play) {
@@ -346,6 +421,45 @@ void TaskMotorUpdate(void *pvParameters)
                     pulse_deadline = millis() + 1200;
                 }
             }
+        }
+        publish_motor_input(); // Position and its mode epoch become visible together.
+        if (sensor_only) {
+            const uint32_t sample_now = millis();
+            if (sample_now - last_sensor_read >= 10) {
+                last_sensor_read = sample_now;
+                const float angle = readMySensorCallback();
+                float delta = angle - last_angle;
+                // MT6701 wraps at one turn; unwrap the shortest angular step.
+                if (delta > PI) delta -= 2 * PI;
+                else if (delta < -PI) delta += 2 * PI;
+                last_angle = angle;
+                // FOC learns the sensor polarity at initFOC(); use it here too
+                // so dark and awake detents have the same physical direction.
+                delta *= static_cast<int>(motor.sensor_direction);
+                #if !XK_INVERT_ROTATION
+                    delta = -delta;
+                #endif
+                if (HAL::encoder_is_pushed()) accumulated_angle = 0;
+                else accumulated_angle += delta;
+                constexpr float step = AlwaysReady::Budget::kDarkStepDegrees * PI / 180.0f;
+                // Bound work and ignore huge discontinuities after missed SPI
+                // samples. This prevents false mass-rotation on a bus glitch.
+                if (fabsf(delta) > 0.75f) accumulated_angle = 0;
+                int steps = 0;
+                while (accumulated_angle >= step && steps++ < 8) {
+                    ++motor_config.position;
+                    accumulated_angle -= step;
+                }
+                steps = 0;
+                while (accumulated_angle <= -step && steps++ < 8) {
+                    --motor_config.position;
+                    accumulated_angle += step;
+                }
+                publish_motor_input();
+                motor_status_publish(false);
+            }
+            vTaskDelay(pdMS_TO_TICKS(5));
+            continue;
         }
         const uint32_t pulse_now = millis();
         if (pulse_pending && !pending_must_play && (int32_t)(pulse_deadline - pulse_now) < 0) pulse_pending = false;
@@ -461,6 +575,7 @@ void TaskMotorUpdate(void *pvParameters)
         }
         // motor.monitor();
         commander.run();
+        publish_motor_input();
         motor_status_publish(out_of_bounds);
         // Serial.println(motor_config.position);
         vTaskDelay(1);

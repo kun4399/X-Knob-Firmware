@@ -39,6 +39,15 @@ deep sleep because battery/VBUS sensing pins have not been established for the
 target board. See [verification status](verification.md) before relying on
 sleep or battery behavior.
 
+The manual **关机** menu action now uses ESP32-S3 deep sleep while retaining
+the existing power latch levels (battery-off low, on/off high). It does not
+pulse the battery-cut control. The disabled motor phase outputs, backlight
+and RGB data pin are held through sleep. GPIO 5 is the sole active-low EXT0
+wake source; boot firmware rejects short presses before peripheral startup.
+The manual-off marker also survives resets through NVS. These are firmware
+contracts, compiled and host-tested; latch retention, no visible wake flash,
+button timing and current on USB and battery still require hardware checks.
+
 ## Variant checks
 
 - Confirm the PCB version and connector orientation before changing the pin

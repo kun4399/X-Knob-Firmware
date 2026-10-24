@@ -15,6 +15,7 @@ uint32_t event_started = 0;
 uint32_t previous_frame = 0;
 uint8_t budget = 255;
 uint8_t frame_budget = 255;
+bool dark_cleared = false;
 
 uint8_t wave(uint32_t now, uint32_t period) {
     uint32_t t = now % period;
@@ -63,6 +64,11 @@ void strip_start(unsigned long now) {
     revision = event_revision;
     frame_budget = budget;
     portEXIT_CRITICAL(&state_mux);
+    if (frame_budget == 0) {
+        if (!dark_cleared) { strip.clear(); strip.show(); dark_cleared = true; }
+        return; // keep WS2812 black without continuous 25fps bus traffic
+    }
+    dark_cleared = false;
     if (revision != played_event) { played_event = revision; event_started = now; }
     strip.clear();
     uint8_t level = wave(now, 6000);
