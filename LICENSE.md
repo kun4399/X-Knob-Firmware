@@ -1,7 +1,7 @@
 MIT License
 
 Copyright (c) 2023 dingmos
-Copyright (c) 2026 X-Knob firmware contributors
+Copyright (c) 2026 X-Knob contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

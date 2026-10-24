@@ -1,77 +1,74 @@
-# Project structure and runtime architecture
+# Architecture
 
-This repository contains two separately run components: the ESP32-S3 firmware
-and an optional macOS Codex-to-MQTT bridge. The Mac code is kept in
-`mac_companion/`; it is not compiled into or uploaded with the knob firmware.
-The ESP32-WROOM-32 light gateway is a separate project in the SmartLED
-repository.
+The repository root is the X-Knob project. Each independently built component
+has its own directory and instructions; only the ESP32-S3 project is part of
+the PlatformIO build.
 
 ```text
-1.Firmware/
-├── src/                 ESP32-S3 firmware
-│   ├── app/             LVGL pages, navigation, and application state
-│   ├── hal/             motor, encoder, LCD, NVS, and MQTT services
-│   ├── port/            LVGL display and input adapters
-│   ├── services/        gesture and light-control state machines
-│   └── web/             local Wi-Fi/MQTT setup and OTA handlers
-├── lib/                 firmware support libraries (including LVGL)
-├── design/v48/          source catalogue for generated face drawings
-├── tools/               asset generators and host-side tests
-├── docs/                setup, interaction, protocol, and verification notes
-└── mac_companion/       independent Python service, hooks, and tests
+firmware/
+├── src/app/          LVGL pages, navigation, and shared application state
+├── src/hal/          motor, encoder, LCD, NVS, and MQTT
+├── src/port/         display and input adapters
+├── src/services/     gesture, light-control, and scene-storage logic
+├── src/web/          local network setup and OTA handlers
+├── lib/              firmware libraries, including LVGL
+├── design/v48/       source catalogues for generated face drawings
+└── tools/             asset generators and host tests
+macos/companion/       independent Python service and Codex hooks
+hardware/              BOM, CAD, and visual references
+docs/                  maintained project documentation
 ```
 
-## Firmware startup and task ownership
+## Firmware runtime
 
-`src/main.cpp` initializes the HAL, NVS, LVGL, application pages, and runtime
-tasks. The motor loop is independent of LVGL so display work cannot replace its
-high-frequency control loop. The motor task is the only owner of motor writes;
-the Arduino loop owns NeoPixel writes; LVGL objects are changed by the UI task.
+`firmware/src/main.cpp` starts the hardware abstraction layer, NVS, LVGL,
+application pages, and runtime tasks. The motor update loop runs independently
+from LVGL so drawing work does not replace its high-frequency control loop.
+The motor task is the sole owner of motor writes, the Arduino loop owns
+NeoPixel writes, and the LVGL task owns page objects.
 
-The board pin map and task-core assignments are in `src/config.h`. Motor
-parameters and GPIO assignments are hardware-specific. Do not copy them to a
-different board without checking its schematic and sensor arrangement.
+The pin map and task-core assignments are in `firmware/src/config.h`. Motor
+parameters and GPIO assignments are board-specific. Confirm the schematic
+before adapting this firmware to a different PCB revision.
 
 ## Firmware modules
 
-- `src/hal/` implements motor/encoder input, LCD backlight and saved power
-  settings, NVS, and the Wi-Fi/MQTT worker.
-- `src/port/` connects LVGL flush/input callbacks to the LCD and rotary input.
-- `src/services/` contains UI-independent gesture and light-control logic.
-- `src/app/Pages/` contains pages registered through `AppFactory.cpp` and
-  installed by `app.cpp`. `Face` is the normal startup destination; the V4.8
-  carousel opens the light, scene editor, Codex, notifications, power, and
-  settings modules.
-- `src/web/` handles local Wi-Fi/MQTT setup and OTA upload. Never log submitted
-  passwords.
-- `design/v48/` is source data; `tools/generate_face_data.py` produces the
-  compact drawing table used by the firmware. GIFs and browser assets are not
-  runtime firmware assets.
-- `mac_companion/` has a separate Python dependency file, virtual environment,
-  unit tests, local hook ingress, and optional LaunchAgent. It publishes only
-  allowlisted Codex metadata to the existing broker.
+- `firmware/src/hal/` implements the encoder and motor, LCD/backlight, NVS,
+  and Wi-Fi/MQTT worker.
+- `firmware/src/port/` connects LVGL flush and input callbacks to the display
+  and rotary input.
+- `firmware/src/services/` contains UI-independent gesture, light-control,
+  menu-navigation, and scene-persistence logic.
+- `firmware/src/app/Pages/` contains the pages constructed by
+  `AppFactory.cpp` and installed from `app.cpp`. The electronic face is the
+  startup page; its carousel routes to light control, scene editing, Codex,
+  notifications, power, and settings. `Playground/` is retained as a shared
+  rotary-control base used by the settings page; it is not a user-facing app.
+- `firmware/src/web/` provides local Wi-Fi/MQTT setup and OTA handling. It must
+  not log submitted credentials.
+- `firmware/design/v48/` stores face-drawing source data. The generator in
+  `firmware/tools/` emits compact firmware data; browser previews are not
+  runtime assets.
+- Firmware source no longer includes the unreachable Home Assistant and
+  Surface Dial HID pages, the empty page template, the unused status bar, or
+  the uncalled generated demo UI. LVGL remains vendored because it is a build
+  dependency; its upstream examples are not used as application source.
+- `macos/companion/` is an independent Python process with its own dependency
+  file, tests, local hook ingress, and optional LaunchAgent. It publishes only
+  allowlisted Codex metadata to the configured MQTT broker.
 
-## Page and gesture behavior
+## Page lifecycle and control behavior
 
-`PageManager` owns page lifetime and transitions. A page creates LVGL objects
-in its load hooks and releases timers/groups in unload hooks. The current page
-routes and button/rotary contract are maintained in
-[INTERACTION_MAP.md](INTERACTION_MAP.md); use that as the behavior reference
-when changing navigation. In particular, a short press in the light app only
-changes the active control view. The power view changes the light only on
-rotation. Previews are not commands, and a light value is confirmed only after
-gateway acknowledgement/readback described in [MQTT.md](MQTT.md).
+`PageManager` owns page lifetime and transitions. Pages create LVGL objects in
+their load hooks and release timers/groups in unload hooks. The complete
+page-entry and gesture contract is in [interactions.md](interactions.md).
+Light-control previews do not issue commands, and a value is confirmed only
+after the gateway ACK/readback documented in
+[protocols/mqtt.md](protocols/mqtt.md).
 
-## Build and test by component
+## Build and verification
 
-Build firmware from the repository root with `pio run`. Host-only firmware
-logic tests and asset generation commands are listed in
-[V48_RELEASE.md](V48_RELEASE.md). For the Mac bridge, create a separate venv
-inside `mac_companion/`, install its own `requirements.txt`, then run
-`python -m unittest discover -s tests -v` from that directory. Installing or
-testing the Mac bridge does not flash the knob. See
-[Mac Companion setup](../mac_companion/README.md).
-
-Build success and host tests do not prove screen rendering, motor feel, MQTT
-delivery, or light behavior on a physical device. Current evidence and open
-hardware checks are listed in [V48_RELEASE.md](V48_RELEASE.md).
+Build firmware from `firmware/` with `pio run`. Build and test the Mac service
+from `macos/companion/` using its own Python virtual environment. The
+[verification notes](verification.md) distinguish source checks, builds, host
+tests, and behavior that still needs physical observation.

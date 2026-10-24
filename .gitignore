@@ -1,14 +1,27 @@
-.pio
-.venv/
-logs/
-__pycache__/
-*.pyc
-.vscode
-src/secrets.h
+# PlatformIO build and local project settings
+firmware/.pio/
+firmware/logs/
+firmware/src/secrets.h
+firmware/.vscode/
+
+# Mac Companion runtime configuration and environment
+macos/companion/.venv/
+macos/companion/.env
+macos/companion/.env.*
+
+# Python caches and generated firmware artifacts
+**/__pycache__/
+*.py[cod]
 *.bin
 *.elf
 *.map
 *.hex
+
+# Local tool/editor state
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch/
 .DS_Store
 .AppleDouble
 .LSOverride

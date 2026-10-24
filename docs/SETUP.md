@@ -5,10 +5,11 @@
 Install PlatformIO and build from the firmware directory:
 
 ```sh
+cd firmware
 pio run
 ```
 
-Check the PlatformIO environment in `platformio.ini`. For upload, select the intended board and serial port in PlatformIO or add the appropriate `upload_port` locally; do not commit machine-specific port settings.
+Check the PlatformIO environment in `firmware/platformio.ini`. For upload, select the intended board and serial port in PlatformIO or add the appropriate `upload_port` locally; do not commit machine-specific port settings.
 
 ## Configure the network
 
@@ -34,4 +35,4 @@ If the display appears blank but the device still responds to input, first check
 
 ## Privacy
 
-Do not share `src/secrets.h`, NVS dumps, raw serial output, firmware images built with private keys, or screenshots of configuration forms. The firmware must never print submitted Wi-Fi or MQTT passwords.
+Do not share `firmware/src/secrets.h`, NVS dumps, raw serial output, firmware images built with private keys, or screenshots of configuration forms. The firmware must never print submitted Wi-Fi or MQTT passwords.
